@@ -143,6 +143,32 @@ VIEWS['life/habits'] = {render(){
   return h;
 }};
 
+/* ---------- weight trend: weekly averages, adjust calories only after 4 weeks ---------- */
+function weekAvg(fromAgo, toAgo){
+  const a = dadd(today(), -toAgo), b = dadd(today(), -fromAgo);
+  const v = S.body.weights.filter(w => w.d >= a && w.d <= b).map(w => w.kg);
+  return v.length ? {avg:v.reduce((x, y) => x + y, 0) / v.length, n:v.length} : null;
+}
+function weightTrendCard(){
+  const now = weekAvg(0, 6), prev = weekAvg(7, 13), month = weekAvg(28, 34);
+  if (!now) return '';
+  const goal = S.food.profile.goal || 'maintain';
+  let h = `<div class="card"><div class="item"><b>Weekly average</b><span>${r1(now.avg)} kg</span></div>`;
+  if (prev) { const ch = now.avg - prev.avg; h += `<div class="muted small">${ch >= 0 ? '+' : ''}${r1(ch)} kg vs last week (${ch >= 0 ? '+' : ''}${r1(ch / prev.avg * 100)}%). Daily weight jumps around; only the weekly average matters.</div>`; }
+  if (!month) {
+    h += `<div class="coach" style="margin-top:8px">Weigh in at least 3 times a week, same time of day. After 4 weeks you'll get a calorie call here.</div>`;
+  } else {
+    const rate = (now.avg - month.avg) / month.avg * 100 / 4;   // % per week over the last ~4 weeks
+    const want = {cut:[-1.0, -0.5], maintain:[-0.25, 0.25], bulk:[0.1, 0.4]}[goal];
+    let msg, cls = '';
+    if (rate < want[0]) msg = goal === 'cut' ? 'Dropping faster than 1% a week: add about 150 kcal a day so you keep the muscle.' : 'Losing weight: add about 150–200 kcal a day.';
+    else if (rate > want[1]) msg = goal === 'bulk' ? 'Gaining faster than a lean bulk should: take off about 150 kcal a day.' : 'Weight is creeping up: take off about 150 kcal a day.';
+    else { msg = 'Right on track for your goal. Keep calories where they are.'; cls = 'up'; }
+    h += `<div class="coach ${cls}" style="margin-top:8px">4-week trend: ${rate >= 0 ? '+' : ''}${r1(rate)}% a week. ${msg}</div>`;
+  }
+  return h + `</div>`;
+}
+
 /* ---------- body view ---------- */
 VIEWS['life/body'] = {
   render(){
@@ -154,7 +180,8 @@ VIEWS['life/body'] = {
       h += `<div class="stat-grid"><div class="stat"><div class="v">${r1(last.kg)}</div><div class="l">kg now</div></div>
         <div class="stat"><div class="v">${wkAgo ? (last.kg - wkAgo.kg >= 0 ? '+' : '') + r1(last.kg - wkAgo.kg) : '–'}</div><div class="l">vs a week ago</div></div></div>
         <div class="card"><canvas id="wchart"></canvas></div>
-        <div class="muted small" style="margin-bottom:8px">${W.length > 1 ? 'Since ' + dlabel(first.d) + ': ' + (last.kg - first.kg >= 0 ? '+' : '') + r1(last.kg - first.kg) + ' kg' : ''}</div>`;
+        <div class="muted small" style="margin-bottom:8px">${W.length > 1 ? 'Since ' + dlabel(first.d) + ': ' + (last.kg - first.kg >= 0 ? '+' : '') + r1(last.kg - first.kg) + ' kg' : ''}</div>
+        ${weightTrendCard()}`;
     } else h += `<div class="muted small">Log your weight a few times a week, same time of day, to see the trend.</div>`;
     const days = Array.from({length:7}, (_, i) => dadd(today(), -i));
     h += `<div class="sec">💧 Water (goal ${(S.body.waterGoal / 1000).toFixed(1)} L)</div><div class="card">`;

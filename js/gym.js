@@ -104,28 +104,53 @@ function pickExercise(onPick){
 
 /* ---------- workout ---------- */
 function startWorkout(name, items){
-  S.active = {id:uid(), name, start:Date.now(), exercises: items.map(it => newEntry(it.exId, it.sets, it.reps))};
+  S.active = {id:uid(), name, start:Date.now(), exercises: items.map(it => newEntry(it.exId, it.sets, it.reps, it.rest, it.effort))};
   save(); go('gym', 'workout');
 }
-function newEntry(exId, n, reps){
+function newEntry(exId, n, reps, rest, effort){
   const prev = lastSetsFor(exId);
-  const count = n || (prev ? prev.length : 3);
-  return {exId, reps:reps || '', sets: Array.from({length: count}, () => ({w:null, r:null, done:false}))};
+  const count = n || (prev ? prev.length : 2);
+  return {exId, reps:reps || '', rest:rest || 0, effort:effort || '', sets: Array.from({length: count}, () => ({w:null, r:null, done:false}))};
 }
-/** "↑ add weight" when every set last time reached the top of the rep range */
+/** Double progression: reps first, then the smallest weight jump. */
 function overloadHint(e){
   const m = String(e.reps || '').match(/(\d+)\s*-\s*(\d+)/); if (!m) return '';
   const prev = lastSetsFor(e.exId); if (!prev || !prev.length) return '';
-  const top = +m[2];
-  if (prev.every(s => s.r >= top)) return ' · <span style="color:var(--accent)">↑ hit ' + top + ' last time: add weight</span>';
-  return ' · beat last time\'s reps';
+  const top = +m[2], bottom = +m[1];
+  const w = Math.max(...prev.map(s => s.w || 0));
+  if (prev.every(s => s.r >= top)) return `<div class="coach up">↑ You hit ${top} on every set. Add the smallest weight jump today.</div>`;
+  if (prev.some(s => s.r < bottom)) return `<div class="coach">Last time dipped under ${bottom} reps. Keep ${fmtW(w)} ${S.unit} and own the range.</div>`;
+  return `<div class="coach">Same ${fmtW(w)} ${S.unit}. Beat last time by one rep. That's progress.</div>`;
 }
+
+/* ---------- rest timer (starts when you tick a set) ---------- */
+let restT = null;
+function startRest(sec){
+  if (!sec) return;
+  stopRest();
+  const bar = document.createElement('div');
+  bar.id = 'rest';
+  bar.innerHTML = '<span class="grow"><b id="restT"></b><div class="muted tiny">Rest. Next set to failure.</div></span><button class="secondary" data-r="30">+30s</button><button class="primary" data-r="skip">Go</button>';
+  document.body.appendChild(bar);
+  let end = Date.now() + sec * 1000;
+  bar.querySelector('[data-r="30"]').onclick = () => { end += 30000; tick(); };
+  bar.querySelector('[data-r="skip"]').onclick = stopRest;
+  const tick = () => {
+    const left = Math.max(0, Math.round((end - Date.now()) / 1000));
+    const t = document.getElementById('restT'); if (t) t.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+    if (left <= 0) { try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch(e) {} bar.classList.add('done'); const tt = document.getElementById('restT'); if (tt) tt.textContent = 'Go'; clearInterval(restT); restT = null; setTimeout(() => { if (!restT) stopRest(); }, 4000); }
+  };
+  tick(); restT = setInterval(tick, 500);
+}
+function stopRest(){ if (restT) clearInterval(restT); restT = null; const b = document.getElementById('rest'); if (b) b.remove(); }
 VIEWS['gym/workout'] = {
   title: () => S.active ? 'Workout in progress' : 'Gym',
   render(){
     if (S.active) return viewActive();
     let h = '';
     const nx = nextProgramRoutine();
+    if (S.program && S.user && (S.user.planVer || 1) < PLAN_VERSION) h += `<button class="card tap" data-act="onboard" style="color:var(--text);border:1px solid var(--accent)"><b>⚡ Your plan got an upgrade</b>
+        <div class="muted small">Low volume, high intensity: 1–2 sets to failure, double progression, new split options and signature moves. Tap to rebuild yours.</div></button>`;
     if (S.program && nx) h += `<div class="card"><div class="muted small">${esc(S.program.split)} · next up</div><div class="item"><b style="font-size:20px">${esc(nx.r.name)}</b>
         <button class="primary" style="min-height:44px" data-act="start-routine" data-id="${nx.r.id}">Start</button></div>
         <div class="chips">${nx.r.items.map(i => `<span class="chip">${esc(exName(i.exId))}</span>`).join('')}</div></div>`;
@@ -151,7 +176,9 @@ function viewActive(){
   a.exercises.forEach((e, i) => {
     const prev = lastSetsFor(e.exId) || [];
     h += `<div class="card"><div class="ex-title"><b>${esc(exName(e.exId))}</b><button class="icon" data-act="rm-ex" data-i="${i}" aria-label="Remove exercise">✕</button></div>
-      ${e.reps ? `<div class="muted small" style="margin:-8px 0 6px">Target ${e.sets.length} × ${esc(e.reps)} reps${overloadHint(e)}</div>` : ''}
+      ${i === 0 ? `<div class="coach">🔥 Warm up first: 2–3 lighter ramp-up sets. Don't log them, they don't count.</div>` : ''}
+      ${e.reps ? `<div class="muted small" style="margin:-4px 0 4px">${e.sets.length} × ${esc(e.reps)} reps${e.effort ? ' · ' + esc(e.effort) : ''}${e.rest ? ' · rest ' + Math.round(e.rest / 60 * 2) / 2 + ' min' : ''}</div>` : ''}
+      ${overloadHint(e)}
       <div class="set-row hdr"><span>Set</span><span>Last time</span><span>${S.unit}</span><span>Reps</span><span></span></div>`;
     e.sets.forEach((s, j) => {
       const p = prev[j];
@@ -185,10 +212,18 @@ function finishWorkout(){
     if (topW > bestW && topW > 0) prs.push(`${exName(e.exId)}: heaviest ever, ${fmtW(topW)} ${S.unit}`);
     else if (topE > bestE && topE > 0) prs.push(`${exName(e.exId)}: best est. 1-rep max, ${fmtW(topE)} ${S.unit}`);
   });
+  // "beat the logbook": best set better than last session's best on the same exercise
+  let beat = 0, logged = 0;
+  exercises.forEach(e => {
+    const prev = lastSetsFor(e.exId); if (!prev) return;
+    logged++;
+    if (Math.max(...e.sets.map(e1rm)) > Math.max(...prev.map(e1rm)) + 0.01) beat++;
+  });
   const w = {id:a.id, name:a.name.trim() || 'Workout', start:a.start, end:Date.now(), exercises};
   S.workouts.push(w); S.active = null; save(); render();
   openSheet(b => {
     html(b, `<h2>Workout done 💪</h2>
+      ${logged ? `<div class="coach ${beat ? 'up' : ''}" style="margin-bottom:10px">${beat ? `Beat the logbook on ${beat} of ${logged} lifts.` : 'Matched the logbook. Same weight for a few weeks is normal: next time, one more rep.'}</div>` : ''}
       <div class="stat-grid"><div class="stat"><div class="v">${fmtDur(w.end - w.start)}</div><div class="l">Time</div></div>
       <div class="stat"><div class="v">${setCount(w)}</div><div class="l">Sets</div></div>
       <div class="stat"><div class="v">${fmtNum(volume(w) * F())}</div><div class="l">${S.unit} lifted</div></div>
@@ -359,9 +394,10 @@ Object.assign(ACTIONS, {
       if (s.w == null) s.w = 0;
     }
     s.done = !s.done; save(); render();
+    if (s.done && e.sets.some(x => !x.done) || s.done && S.active.exercises.indexOf(e) < S.active.exercises.length - 1) startRest(e.rest || 120);
   },
-  finish: () => finishWorkout(),
-  'cancel-wo': () => { if (confirm('Cancel this workout? Nothing from it will be saved.')) { S.active = null; save(); render(); } },
+  finish: () => { stopRest(); finishWorkout(); },
+  'cancel-wo': () => { if (confirm('Cancel this workout? Nothing from it will be saved.')) { stopRest(); S.active = null; save(); render(); } },
   metric: b => { metric = b.dataset.m; render(); },
   'new-routine': () => editRoutine(null),
   'edit-routine': b => editRoutine(b.dataset.id)

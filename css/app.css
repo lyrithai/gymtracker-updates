@@ -184,6 +184,14 @@ canvas{width:100%;height:200px;display:block}
 .ob-num{min-height:56px;border-radius:14px;border:2px solid transparent;background:var(--card);font-size:22px;font-weight:800;color:var(--text)}
 .ob-num.on{border-color:var(--accent);color:var(--accent)}
 
+.coach{font-size:13px;color:var(--muted);background:var(--card2);border-radius:10px;padding:8px 10px;margin:0 0 8px}
+.coach.up{color:var(--accent);background:rgba(163,230,53,.10)}
+#rest{position:fixed;left:12px;right:12px;bottom:76px;z-index:25;display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+#rest b{font-size:24px;font-variant-numeric:tabular-nums}
+#rest button{min-height:44px}
+#rest.done{border-color:var(--accent)}
+#rest.done b{color:var(--accent)}
+
 /* ranks body */
 .bodies{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0}
 .body{width:100%;height:auto;display:block}

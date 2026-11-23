@@ -448,10 +448,12 @@ VIEWS['food/nutrients'] = {render(){
 function suggestTargets(p){
   const bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'f' ? -161 : 5);
   let kcal = bmr * p.activity;
-  if (p.goal === 'cut') kcal *= 0.8; else if (p.goal === 'bulk') kcal *= 1.1;
+  // cut ~20% under; maingain = small surplus (~5%)
+  if (p.goal === 'cut') kcal *= 0.8; else if (p.goal === 'bulk') kcal *= 1.05;
   kcal = Math.round(kcal / 10) * 10;
+  // protein 1.6-2.2 g/kg (top end on a cut); fat ~0.7-0.9 g/kg (lower on a cut), carbs fill the rest
   const protein = Math.round(p.weight * (p.goal === 'cut' ? 2.2 : 2.0));
-  const fat = Math.round(kcal * 0.25 / 9);
+  const fat = Math.round(p.weight * (p.goal === 'cut' ? 0.7 : 0.9));
   const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
   return {kcal, protein, carbs, fat};
 }
