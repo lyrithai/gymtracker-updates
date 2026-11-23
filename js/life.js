@@ -60,7 +60,7 @@ function editHabit(h){
 VIEWS.today = {
   title: () => {
     const h = new Date().getHours();
-    return (h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening');
+    return (h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening') + (S.user && S.user.name ? ', ' + S.user.name : '');
   },
   render(){
     const dk = today(), T = S.food.targets, {t} = dayTotals(dk);
@@ -76,12 +76,8 @@ VIEWS.today = {
     else if (done.length) h += `<span class="chip hot">Done ✓</span></div><div class="muted small">${done.map(w => esc(w.name) + ' · ' + pl(setCount(w), 'set')).join('<br>')}</div>`;
     else {
       h += `<button class="ghost" data-act="go" data-tab="gym" data-sub="workout">Open</button></div>`;
-      if (S.routines.length) {
-        const lastName = S.workouts.length ? S.workouts[S.workouts.length - 1].name : '';
-        const idx = S.routines.findIndex(r => r.name === lastName);
-        const next = S.routines[(idx + 1) % S.routines.length];
-        h += `<button class="secondary wide" data-act="start-routine" data-id="${next.id}">Start ${esc(next.name)}${idx >= 0 ? ' (next up)' : ''}</button>`;
-      }
+      const nx = nextProgramRoutine();
+      if (nx) h += `<button class="secondary wide" data-act="start-routine" data-id="${nx.r.id}">Start ${esc(nx.r.name)}${nx.known || S.program ? ' (next up)' : ''}</button>`;
     }
     h += `</div>`;
     // water

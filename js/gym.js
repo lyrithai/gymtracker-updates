@@ -104,19 +104,33 @@ function pickExercise(onPick){
 
 /* ---------- workout ---------- */
 function startWorkout(name, items){
-  S.active = {id:uid(), name, start:Date.now(), exercises: items.map(it => newEntry(it.exId, it.sets))};
+  S.active = {id:uid(), name, start:Date.now(), exercises: items.map(it => newEntry(it.exId, it.sets, it.reps))};
   save(); go('gym', 'workout');
 }
-function newEntry(exId, n){
+function newEntry(exId, n, reps){
   const prev = lastSetsFor(exId);
   const count = n || (prev ? prev.length : 3);
-  return {exId, sets: Array.from({length: count}, () => ({w:null, r:null, done:false}))};
+  return {exId, reps:reps || '', sets: Array.from({length: count}, () => ({w:null, r:null, done:false}))};
+}
+/** "↑ add weight" when every set last time reached the top of the rep range */
+function overloadHint(e){
+  const m = String(e.reps || '').match(/(\d+)\s*-\s*(\d+)/); if (!m) return '';
+  const prev = lastSetsFor(e.exId); if (!prev || !prev.length) return '';
+  const top = +m[2];
+  if (prev.every(s => s.r >= top)) return ' · <span style="color:var(--accent)">↑ hit ' + top + ' last time: add weight</span>';
+  return ' · beat last time\'s reps';
 }
 VIEWS['gym/workout'] = {
   title: () => S.active ? 'Workout in progress' : 'Gym',
   render(){
     if (S.active) return viewActive();
-    let h = `<button class="primary big-start" data-act="start-empty">＋ Start empty workout</button><div class="sec">Start a routine</div>`;
+    let h = '';
+    const nx = nextProgramRoutine();
+    if (S.program && nx) h += `<div class="card"><div class="muted small">${esc(S.program.split)} · next up</div><div class="item"><b style="font-size:20px">${esc(nx.r.name)}</b>
+        <button class="primary" style="min-height:44px" data-act="start-routine" data-id="${nx.r.id}">Start</button></div>
+        <div class="chips">${nx.r.items.map(i => `<span class="chip">${esc(exName(i.exId))}</span>`).join('')}</div></div>`;
+    else h += `<button class="card tap" data-act="onboard" style="color:var(--text)"><b>✨ Build me a program</b><div class="muted small">Answer a few questions and get a science-based split with movements you pick.</div></button>`;
+    h += `<button class="secondary big-start" data-act="start-empty">＋ Start empty workout</button><div class="sec">Your routines</div>`;
     if (!S.routines.length) h += `<div class="card muted">No routines yet. Make one in Routines.</div>`;
     S.routines.forEach(r => {
       h += `<button class="card tap" data-act="start-routine" data-id="${r.id}">
@@ -137,6 +151,7 @@ function viewActive(){
   a.exercises.forEach((e, i) => {
     const prev = lastSetsFor(e.exId) || [];
     h += `<div class="card"><div class="ex-title"><b>${esc(exName(e.exId))}</b><button class="icon" data-act="rm-ex" data-i="${i}" aria-label="Remove exercise">✕</button></div>
+      ${e.reps ? `<div class="muted small" style="margin:-8px 0 6px">Target ${e.sets.length} × ${esc(e.reps)} reps${overloadHint(e)}</div>` : ''}
       <div class="set-row hdr"><span>Set</span><span>Last time</span><span>${S.unit}</span><span>Reps</span><span></span></div>`;
     e.sets.forEach((s, j) => {
       const p = prev[j];
@@ -272,11 +287,12 @@ VIEWS['gym/progress'] = {
 
 /* ---------- routines ---------- */
 VIEWS['gym/routines'] = {render(){
-  let h = `<button class="primary big-start" data-act="new-routine">＋ New routine</button>`;
+  let h = `<button class="primary big-start" data-act="new-routine">＋ New routine</button>
+    <button class="secondary wide" data-act="onboard" style="margin-bottom:12px">✨ ${S.program ? 'Rebuild my program' : 'Build me a program'}</button>`;
   if (!S.routines.length) h += `<div class="empty">No routines yet.</div>`;
   S.routines.forEach(r => {
     h += `<div class="card"><div class="item"><span class="t">${esc(r.name)}</span><button class="ghost" data-act="edit-routine" data-id="${r.id}">Edit</button></div>
-      <div class="muted small">${r.items.map(i => `${esc(exName(i.exId))} · ${i.sets}×`).join('<br>') || 'No exercises'}</div>
+      <div class="muted small">${r.items.map(i => `${esc(exName(i.exId))} · ${i.sets}×${i.reps ? esc(i.reps) : ''}`).join('<br>') || 'No exercises'}</div>
       <button class="secondary wide" data-act="start-routine" data-id="${r.id}">Start ${esc(r.name)}</button></div>`;
   });
   return h;

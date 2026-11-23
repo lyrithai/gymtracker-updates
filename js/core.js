@@ -8,7 +8,7 @@ const TABS = {
   today:   {title:'Today', subs:null},
   food:    {title:'Food', subs:[['diary','Diary'],['nutrients','Nutrients'],['mine','My foods']]},
   recipes: {title:'Recipes', subs:[['browse','Recipes'],['prep','Meal prep']]},
-  gym:     {title:'Gym', subs:[['workout','Workout'],['history','History'],['progress','Progress'],['routines','Routines']]},
+  gym:     {title:'Gym', subs:[['workout','Workout'],['ranks','Ranks'],['history','History'],['progress','Progress'],['routines','Routines']]},
   life:    {title:'Life', subs:[['todo','To-do'],['habits','Habits'],['body','Body']]}
 };
 let tab = 'today';
@@ -65,6 +65,8 @@ function defaults(d){
   d.body.water = d.body.water || {};
   d.body.sleep = d.body.sleep || {};
   d.body.waterGoal = d.body.waterGoal || 2500;
+  if (d.user === undefined) d.user = null;
+  if (d.program === undefined) d.program = null;
   return d;
 }
 function load(){
@@ -196,6 +198,7 @@ ACTIONS.go = b => go(b.dataset.tab, b.dataset.sub);
 
 window.handleBack = function(){
   if (sheets.length) { closeSheet(); return true; }
+  if (typeof OB !== 'undefined' && OB) return obBack();
   if (tab !== 'today') { go('today'); return true; }
   return false;
 };
@@ -213,7 +216,8 @@ ACTIONS.settings = () => openSheet((b, sh) => {
   html(b, `<h2>Settings</h2>
     <div class="sec">Weight unit (gym)</div>
     <div class="seg"><button data-u="kg" class="${S.unit === 'kg' ? 'on' : ''}">Kilograms (kg)</button><button data-u="lb" class="${S.unit === 'lb' ? 'on' : ''}">Pounds (lb)</button></div>
-    <div class="sec">Food goals</div>
+    <div class="sec">Your plan</div>
+    <button class="secondary wide" data-redo>Redo setup (goals, body, training split)</button>
     <button class="secondary wide" data-goals>Calories & macro targets</button>
     <div class="sec">Backup</div>
     <div class="muted small" style="margin-bottom:8px">Everything lives only on this phone. Copy a backup now and then and keep it somewhere safe (notes app, email to yourself), especially before you uninstall or switch phones.</div>
@@ -224,6 +228,7 @@ ACTIONS.settings = () => openSheet((b, sh) => {
     <div class="muted small" style="margin-top:16px;text-align:center">${S.workouts.length} workouts · ${Object.keys(S.food.log).length} food days · ${S.todos.length} to-dos<br>Food data: UK McCance & Widdowson (Crown copyright, OGL) and Open Food Facts (ODbL)<br>${window.appVersionText ? esc(appVersionText()) : ''}</div>`);
   on(b, '[data-u]', btn => { S.unit = btn.dataset.u; save(); sh.refresh(); render(); });
   on(b, '[data-goals]', () => openTargets());
+  on(b, '[data-redo]', () => { closeSheet(); startOnboarding(true); });
   on(b, '#bcopy', () => {
     const ta = document.createElement('textarea'); ta.value = JSON.stringify(S); document.body.appendChild(ta);
     ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch(e) {}
