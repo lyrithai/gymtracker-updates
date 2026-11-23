@@ -26,7 +26,7 @@ const EX_LIB = {
     'Leg Press Calf Raise','Tibialis Raise'],
   Arms: ['Bicep Curl','Barbell Curl','EZ Bar Curl','Incline Dumbbell Curl','Bayesian Curl','Cable Curl','Preacher Curl',
     'Machine Preacher Curl','Spider Curl','Drag Curl','Hammer Curl','Cross-Body Hammer Curl','Concentration Curl',
-    'Reverse Curl','Zottman Curl','Tricep Pushdown','Rope Pushdown','Overhead Cable Tricep Extension',
+    'Reverse Curl','TNF Reverse Curl','Zottman Curl','Tricep Pushdown','Rope Pushdown','Overhead Cable Tricep Extension',
     'Katana Tricep Extension','Cross-Body Tricep Extension','Skull Crusher','Dumbbell Skull Crusher','JM Press',
     'Tate Press','Tricep Kickback','Dips','Wrist Curl','Reverse Wrist Curl'],
   Core: ['Plank','Side Plank','Copenhagen Plank','Cable Crunch','Hanging Leg Raise','Hanging Knee Raise','Toes-to-Bar',
@@ -175,7 +175,7 @@ function viewActive(){
   if (!a.exercises.length) h += `<div class="empty">Add your first exercise to get going.</div>`;
   a.exercises.forEach((e, i) => {
     const prev = lastSetsFor(e.exId) || [];
-    h += `<div class="card"><div class="ex-title"><b>${esc(exName(e.exId))}</b><button class="icon" data-act="rm-ex" data-i="${i}" aria-label="Remove exercise">✕</button></div>
+    h += `<div class="card"><div class="ex-title"><b class="grow">${esc(exName(e.exId))}</b><button class="icon" data-act="swap-ex" data-i="${i}" aria-label="Swap exercise">⇄</button><button class="icon" data-act="rm-ex" data-i="${i}" aria-label="Remove exercise">✕</button></div>
       ${i === 0 ? `<div class="coach">🔥 Warm up first: 2–3 lighter ramp-up sets. Don't log them, they don't count.</div>` : ''}
       ${e.reps ? `<div class="muted small" style="margin:-4px 0 4px">${e.sets.length} × ${esc(e.reps)} reps${e.effort ? ' · ' + esc(e.effort) : ''}${e.rest ? ' · rest ' + Math.round(e.rest / 60 * 2) / 2 + ' min' : ''}</div>` : ''}
       ${overloadHint(e)}
@@ -233,6 +233,35 @@ function finishWorkout(){
     on(b, '[data-close]', closeSheet);
   });
 }
+
+/* ---------- swap an exercise for another that hits the same muscle ---------- */
+function swapExercise(i){
+  const a = S.active, e = a.exercises[i], oldName = exName(e.exId);
+  const pools = Object.entries(POOLS).filter(([, list]) => list.some(o => o[0] === oldName));
+  const inWorkout = a.exercises.map(x => exName(x.exId));
+  openSheet(b => {
+    html(b, `<h2>Swap ${esc(oldName)}</h2><div class="muted small" style="margin:-8px 0 8px">Same muscle, different movement. Your sets and targets stay.</div>`);
+    if (!pools.length) html(b, `<div class="muted small">This one isn't in a muscle group yet, so pick from everything.</div>`);
+    pools.forEach(([k, list]) => {
+      const opts = list.filter(o => o[0] !== oldName && !inWorkout.includes(o[0]));
+      if (!opts.length) return;
+      html(b, `<div class="sec">${esc(POOL_NAMES[k] || k)}</div>` + opts.map(o => `<button class="pick" data-n="${esc(o[0])}"><span><b>${esc(o[0])}</b>${o[2] ? `<div class="muted small">${esc(o[2])}</div>` : ''}</span><span class="muted">⇄</span></button>`).join(''));
+    });
+    html(b, `<button class="secondary wide" data-any>Pick any other exercise</button>`);
+    const done = name => {
+      const newId = exIdByName(name);
+      if (e.sets.some(s => s.done) && !confirm('You\'ve logged sets on ' + oldName + '. They\'ll be kept under ' + name + '. Swap anyway?')) return;
+      const oldId = e.exId; e.exId = newId; e.sets.forEach(s => { if (!s.done) { s.w = null; s.r = null; } });
+      const r = S.routines.find(x => x.name === a.name && x.items.some(it => it.exId === oldId));
+      if (r && confirm('Swap it in your ' + r.name + ' routine too, so it\'s there next time?')) r.items.forEach(it => { if (it.exId === oldId) it.exId = newId; });
+      save(); closeSheet(); render(); toast('Swapped to ' + name);
+    };
+    on(b, '[data-n]', btn => done(btn.dataset.n));
+    on(b, '[data-any]', () => { closeSheet(); pickExercise(id => done(exName(id))); });
+  }, {full:true});
+}
+const POOL_NAMES = {chest:'Chest', lats:'Lats (back width)', upperback:'Upper back (thickness)', traps:'Traps', delts:'Shoulders', sideDelt:'Side delts', rearDelt:'Rear delts',
+  triceps:'Triceps', biceps:'Biceps', forearms:'Forearms', quads:'Quads', hamstrings:'Hamstrings', glutes:'Glutes', calves:'Calves', abs:'Abs'};
 
 /* ---------- history ---------- */
 VIEWS['gym/history'] = {render(){
@@ -378,6 +407,7 @@ Object.assign(ACTIONS, {
     if (e.sets.some(s => s.done) && !confirm(`Remove ${exName(e.exId)} and its sets?`)) return;
     a.exercises.splice(+b.dataset.i, 1); save(); render();
   },
+  'swap-ex': b => swapExercise(+b.dataset.i),
   'add-set': b => { const sets = S.active.exercises[+b.dataset.i].sets, last = sets[sets.length - 1]; sets.push({w:last ? last.w : null, r:last ? last.r : null, done:false}); save(); render(); },
   'rm-set': b => { S.active.exercises[+b.dataset.i].sets.pop(); save(); render(); },
   fill: b => {

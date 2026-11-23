@@ -7,38 +7,69 @@
    - machines and cables set up so the target muscle is the limit; signature moves (Keenan flaps, Kelso shrug, TNF press, JM press)
    - leg days start with calves and leg extensions; priority muscles go first
    equip: m machine/cable, b barbell, d dumbbell, w bodyweight. First option = recommended (★). */
+// Muscle pools: any movement that trains the muscle counts. You don't NEED a press, a fly does the job too.
+// [name, equip, why]. A slot picks from its muscle's pool; its "prefer" list only decides the ★ default.
+const POOLS = {
+  chest: [['Smith Machine Incline Press','m','Stable and easy to progress, upper chest'],['Pec Deck','m','Constant tension, triceps out of it'],['Machine Chest Press','m','Stable, so you can go to true failure safely'],
+    ['TNF Press','d','Reverse-grip incline press: elbows tucked, easy on the shoulders'],['Low-to-High Cable Fly','m','Upper chest fly'],['High-to-Low Cable Fly','m',''],['Cable Crossover','m',''],
+    ['Low-Incline Dumbbell Press','d','Upper chest with a big stretch'],['Hammer Strength Chest Press','m',''],['Dumbbell Bench Press','d','Deep stretch at the bottom'],['Incline Dumbbell Fly','d','Huge stretch'],
+    ['Single-Arm Cable Fly','m',''],['Incline Bench Press','b',''],['Bench Press','b','Best for raw pressing strength'],['Chest Dips','w','Lower chest, bodyweight'],['Deficit Push-up','w',''],['Push-up','w','No kit needed']],
+  lats: [['Lat Pulldown','m','Easy to load; same end point every rep'],['Keenan Flaps','m','Cuff at the elbow: lats do all the work, biceps out'],['Cable Pullover','m','Lats through a full stretch'],
+    ['Single-Arm Lat Pulldown','m','Big stretch per side'],['Neutral-Grip Pulldown','m',''],['Kneeling Single-Arm Pulldown','m',''],['Straight-Arm Pulldown','m',''],
+    ['Pull-up','w','The bodyweight classic'],['Chin-up','w',''],['Dumbbell Pullover','d','']],
+  upperback: [['Chest-Supported T-Bar Row','m','No lower back, no cheating'],['Single-Arm Cable Row','m',''],['Seated Cable Row','m',''],['Machine Row','m',''],
+    ['Seal Row','b',''],['Barbell Row','b',''],['Dumbbell Row','d','Works anywhere'],['Meadows Row','b','']],
+  traps: [['Kelso Shrug','m','Chest-supported shrug for the mid-traps'],['Dumbbell Shrug','d',''],['Barbell Shrug','b','']],
+  delts: [['Machine Shoulder Press','m','Stable, easy on the joints'],['Cable Lateral Raise','m','Side delts, no pressing needed'],['Seated Dumbbell Shoulder Press','d','Free path for your shoulders'],
+    ['Cable Y-Raise','m',''],['Lateral Raise','d',''],['Front Raise','d','Front delts only'],['Arnold Press','d',''],['Overhead Press','b','Strength builder']],
+  sideDelt: [['Cable Lateral Raise','m','Tension right where dumbbells go light'],['Behind-the-Back Cable Lateral Raise','m',''],['Cable Y-Raise','m',''],['Machine Lateral Raise','m',''],
+    ['Lean-Away Lateral Raise','d',''],['Lateral Raise','d','Classic, works anywhere'],['Cable Upright Row','m','']],
+  rearDelt: [['Reverse Pec Deck','m','Easiest rear delt move to feel'],['Cable Rear Delt Fly','m',''],['Face Pull','m',''],['Rear Delt Fly','d','']],
+  triceps: [['Overhead Cable Tricep Extension','m','Long head in a stretch, best for size'],['Tricep Pushdown','m','Simple to load heavy'],['JM Press','b','Heavy triceps press, a social-media favourite'],
+    ['Katana Tricep Extension','m',''],['Rope Pushdown','m',''],['Cross-Body Tricep Extension','m',''],['Skull Crusher','b',''],['Close-Grip Bench Press','b',''],['Dips','w','Bodyweight compound'],
+    ['Dumbbell Skull Crusher','d',''],['Tricep Kickback','d','']],
+  biceps: [['Preacher Curl','m','Arm locked in, only the biceps can fail'],['Hammer Curl','d','Biceps plus forearms'],['Bayesian Curl','m','Cable tension at the stretch'],['Incline Dumbbell Curl','d','Biceps at full stretch'],
+    ['Cable Curl','m',''],['EZ Bar Curl','b',''],['Machine Preacher Curl','m',''],['Spider Curl','d',''],['Concentration Curl','d','']],
+  forearms: [['Reverse Curl','b','Brachioradialis and forearms, palms down'],['Hammer Curl','d','Neutral grip, forearms plus biceps'],['TNF Reverse Curl','m','Reverse-grip curl variation'],['Cross-Body Hammer Curl','d',''],['Zottman Curl','d','Curl up palms-up, lower palms-down'],['Wrist Curl','b','Forearm flexors'],['Reverse Wrist Curl','b','Forearm extensors']],
+  quads: [['Pendulum Squat','m','Deep knee bend, quads take everything'],['Leg Extension','m','Do it first on leg day'],['Leg Press','m','Heavy and safe to push hard'],['Hack Squat','m',''],
+    ['Smith Machine Squat','m',''],['Belt Squat','m',''],['Squat','b','Best for overall strength'],['Bulgarian Split Squat','d','Big glute and quad stretch'],['Walking Lunge','d',''],
+    ['Goblet Squat','d','Works at home'],['Sissy Squat','w',''],['Reverse Nordic','w','']],
+  hamstrings: [['Seated Leg Curl','m','Hamstrings at length, more growth'],['Romanian Deadlift','b','Best hamstring stretch under load'],['Lying Leg Curl','m',''],['Stiff-Leg Deadlift','b',''],
+    ['45° Back Extension','m','Hamstrings and glutes, easy on the back'],['B-Stance RDL','d',''],['Nordic Curl','w','']],
+  glutes: [['Hip Thrust','b','Heaviest glute loading'],['Smith Machine Hip Thrust','m',''],['Hip Abduction','m',''],['Cable Glute Kickback','m',''],['45° Back Extension','m',''],['Glute Bridge','w','']],
+  calves: [['Standing Calf Raise','d','Pause in the bottom stretch, no bouncing'],['Leg Press Calf Raise','m',''],['Seated Calf Raise','m','']],
+  abs: [['Cable Crunch','m','Load abs like any other muscle'],['Hanging Leg Raise','w',''],['Ab Wheel Rollout','w',''],['Decline Sit-up','w',''],['Dead Bug','w','']]
+};
+// Slots = a muscle job in a day. pool = what you can pick from; prefer = the ★ default order.
 const SLOTS = {
-  chestPress:  {m:'chest', what:'a flat chest press', big:1, opts:[['Machine Chest Press','m','Stable, so you can go to true failure safely'],['Hammer Strength Chest Press','m',''],['Dumbbell Bench Press','d','Deep stretch at the bottom'],['Bench Press','b','Best for raw pressing strength'],['Push-up','w','No kit needed']]},
-  chestIncline:{m:'chest', what:'an incline press for your upper chest', big:1, opts:[['Smith Machine Incline Press','m','Stable and easy to progress'],['TNF Press','d','Reverse-grip incline press: elbows tucked, easy on the shoulders, ego-proof'],['Low-Incline Dumbbell Press','d','Upper chest with a big stretch'],['Incline Bench Press','b',''],['Deficit Push-up','w','']]},
-  chestFly:    {m:'chest', what:'a chest fly', opts:[['Pec Deck','m','Constant tension, triceps out of it'],['Low-to-High Cable Fly','m',''],['High-to-Low Cable Fly','m',''],['Cable Crossover','m',''],['Incline Dumbbell Fly','d','Huge stretch']]},
-  vPull:       {m:'lats', what:'a pulldown', big:1, opts:[['Lat Pulldown','m','Easy to load; pull to the same end point every rep'],['Neutral-Grip Pulldown','m',''],['Single-Arm Lat Pulldown','m','Big stretch per side'],['Pull-up','w','The bodyweight classic'],['Chin-up','w','']]},
-  latIso:      {m:'lats', what:'a lat isolation', opts:[['Keenan Flaps','m','Cuff at the elbow: lats do all the work, biceps taken out'],['Cable Pullover','m','Lats through a full stretch'],['Kneeling Single-Arm Pulldown','m',''],['Dumbbell Pullover','d','']]},
-  hRow:        {m:'upperback', what:'a row', big:1, opts:[['Chest-Supported T-Bar Row','m','No lower back, no cheating, all upper back'],['Single-Arm Cable Row','m',''],['Seated Cable Row','m',''],['Machine Row','m',''],['Seal Row','b',''],['Dumbbell Row','d','Works anywhere']]},
-  traps:       {m:'traps', what:'a shrug', opts:[['Kelso Shrug','m','Chest-supported shrug for the mid-traps'],['Dumbbell Shrug','d',''],['Barbell Shrug','b','']]},
-  ohp:         {m:'shoulders', what:'an overhead press', big:1, opts:[['Machine Shoulder Press','m','Stable, easy on the joints'],['Seated Dumbbell Shoulder Press','d','Free path for your shoulders'],['Overhead Press','b','Strength builder']]},
-  sideDelt:    {m:'shoulders', what:'a lateral raise for wider shoulders', small:1, opts:[['Cable Lateral Raise','m','Tension right where dumbbells go light'],['Behind-the-Back Cable Lateral Raise','m',''],['Cable Y-Raise','m',''],['Machine Lateral Raise','m',''],['Lean-Away Lateral Raise','d',''],['Lateral Raise','d','Classic, works anywhere']]},
-  rearDelt:    {m:'shoulders', what:'a rear delt move', small:1, opts:[['Reverse Pec Deck','m','Easiest rear delt move to feel'],['Cable Rear Delt Fly','m',''],['Face Pull','m',''],['Rear Delt Fly','d','']]},
-  triOH:       {m:'triceps', what:'an overhead triceps extension', opts:[['Overhead Cable Tricep Extension','m','Long head in a stretch, best for size'],['Katana Tricep Extension','m',''],['Skull Crusher','b',''],['Dumbbell Skull Crusher','d','']]},
-  triPush:     {m:'triceps', what:'a heavy triceps move', opts:[['Tricep Pushdown','m','Simple to load heavy and progress'],['JM Press','b','Heavy triceps press, a social-media favourite'],['Rope Pushdown','m',''],['Dips','w','Bodyweight compound'],['Tricep Kickback','d','']]},
-  biLong:      {m:'biceps', what:'a curl', opts:[['Preacher Curl','m','Arm locked in, biceps are the only thing that can fail'],['Bayesian Curl','m','Cable tension at the stretch'],['Incline Dumbbell Curl','d','Biceps at full stretch'],['EZ Bar Curl','b','']]},
-  biHammer:    {m:'biceps', what:'a hammer or reverse curl', opts:[['Hammer Curl','d','Biceps plus forearms'],['Cable Curl','m',''],['Reverse Curl','b','Forearms and brachialis'],['Cross-Body Hammer Curl','d','']]},
-  squat:       {m:'quads', what:'a squat pattern', big:1, opts:[['Pendulum Squat','m','Deep knee bend, quads take everything'],['Hack Squat','m',''],['Smith Machine Squat','m',''],['Squat','b','Best for overall strength'],['Goblet Squat','d','Works at home']]},
-  legPress:    {m:'quads', what:'a leg press or lunge', big:1, opts:[['Leg Press','m','Heavy and safe to push hard'],['Belt Squat','m',''],['Bulgarian Split Squat','d','Big glute and quad stretch'],['Walking Lunge','d','']]},
-  quadIso:     {m:'quads', what:'a leg extension', opts:[['Leg Extension','m','Do it first on leg day, before you press'],['Sissy Squat','w',''],['Reverse Nordic','w','']]},
-  hinge:       {m:'hamstrings', what:'a hip hinge', big:1, opts:[['Romanian Deadlift','b','Best hamstring stretch under load'],['Stiff-Leg Deadlift','b',''],['45° Back Extension','m','Hamstrings and glutes, easy on the back'],['B-Stance RDL','d','']]},
-  hamCurl:     {m:'hamstrings', what:'a leg curl', opts:[['Seated Leg Curl','m','Hamstrings at length, more growth'],['Lying Leg Curl','m',''],['Nordic Curl','w','']]},
-  glute:       {m:'glutes', what:'a glute move', opts:[['Hip Thrust','b','Heaviest glute loading'],['Smith Machine Hip Thrust','m',''],['Hip Abduction','m',''],['Cable Glute Kickback','m',''],['Glute Bridge','w','']]},
-  calves:      {m:'calves', what:'a calf raise', small:1, opts:[['Standing Calf Raise','d','Pause in the bottom stretch, no bouncing'],['Leg Press Calf Raise','m',''],['Seated Calf Raise','m','']]},
-  abs:         {m:'abs', what:'an ab move', small:1, opts:[['Cable Crunch','m','Load abs like any other muscle'],['Hanging Leg Raise','w',''],['Ab Wheel Rollout','w',''],['Decline Sit-up','w','']]}
+  chestIncline:{m:'chest', pool:'chest', label:'Chest', big:1, prefer:['Smith Machine Incline Press','TNF Press','Low-Incline Dumbbell Press']},
+  chestPress:  {m:'chest', pool:'chest', label:'Chest', big:1, prefer:['Machine Chest Press','Dumbbell Bench Press']},
+  chestFly:    {m:'chest', pool:'chest', label:'Chest', prefer:['Pec Deck','Low-to-High Cable Fly','Incline Dumbbell Fly']},
+  vPull:       {m:'lats', pool:'lats', label:'Lats (back width)', big:1, prefer:['Lat Pulldown','Pull-up']},
+  latIso:      {m:'lats', pool:'lats', label:'Lats (back width)', prefer:['Keenan Flaps','Cable Pullover','Dumbbell Pullover']},
+  hRow:        {m:'upperback', pool:'upperback', label:'Upper back (thickness)', big:1, prefer:['Chest-Supported T-Bar Row','Dumbbell Row']},
+  traps:       {m:'traps', pool:'traps', label:'Traps', prefer:['Kelso Shrug']},
+  ohp:         {m:'shoulders', pool:'delts', label:'Shoulders', big:1, prefer:['Machine Shoulder Press','Seated Dumbbell Shoulder Press']},
+  sideDelt:    {m:'shoulders', pool:'sideDelt', label:'Side delts (width)', small:1, prefer:['Cable Lateral Raise','Lateral Raise']},
+  rearDelt:    {m:'shoulders', pool:'rearDelt', label:'Rear delts', small:1, prefer:['Reverse Pec Deck','Rear Delt Fly']},
+  triOH:       {m:'triceps', pool:'triceps', label:'Triceps', prefer:['Overhead Cable Tricep Extension','Dumbbell Skull Crusher']},
+  triPush:     {m:'triceps', pool:'triceps', label:'Triceps', prefer:['Tricep Pushdown','JM Press','Dips']},
+  biLong:      {m:'biceps', pool:'biceps', label:'Biceps', prefer:['Preacher Curl','Incline Dumbbell Curl']},
+  biHammer:    {m:'forearms', pool:'forearms', label:'Forearms', small:1, prefer:['Reverse Curl','Hammer Curl']},
+  squat:       {m:'quads', pool:'quads', label:'Quads', big:1, prefer:['Pendulum Squat','Hack Squat','Goblet Squat']},
+  legPress:    {m:'quads', pool:'quads', label:'Quads', big:1, prefer:['Leg Press','Bulgarian Split Squat']},
+  quadIso:     {m:'quads', pool:'quads', label:'Quads', prefer:['Leg Extension','Sissy Squat']},
+  hinge:       {m:'hamstrings', pool:'hamstrings', label:'Hamstrings', big:1, prefer:['Romanian Deadlift','45° Back Extension','B-Stance RDL']},
+  hamCurl:     {m:'hamstrings', pool:'hamstrings', label:'Hamstrings', prefer:['Seated Leg Curl','Nordic Curl']},
+  glute:       {m:'glutes', pool:'glutes', label:'Glutes', prefer:['Hip Thrust','Glute Bridge']},
+  calves:      {m:'calves', pool:'calves', label:'Calves', small:1, prefer:['Standing Calf Raise']},
+  abs:         {m:'abs', pool:'abs', label:'Abs', small:1, prefer:['Cable Crunch','Hanging Leg Raise']}
 };
 // Day templates: [slot, priority] (1 = core, 2 = important, 3 = extra; time limits drop 3s then 2s first)
 const DAYS = {
-  fbA:  ['Full Body A', [['chestIncline',1],['vPull',1],['chestFly',2],['hRow',2],['sideDelt',1],['triOH',1],['biLong',1],['quadIso',1],['squat',1],['hamCurl',1],['calves',3],['abs',3]]],
-  fbB:  ['Full Body B', [['chestPress',1],['latIso',1],['hRow',1],['rearDelt',2],['sideDelt',1],['triPush',1],['biHammer',1],['calves',2],['legPress',1],['hinge',1],['hamCurl',2],['traps',3]]],
-  upA:  ['Upper A', [['chestIncline',1],['vPull',1],['chestFly',1],['hRow',1],['sideDelt',1],['triOH',1],['biLong',1],['rearDelt',3]]],
-  loA:  ['Lower A', [['calves',2],['quadIso',1],['squat',1],['hamCurl',1],['hinge',2],['abs',3]]],
-  upB:  ['Upper B', [['chestPress',1],['latIso',1],['hRow',1],['ohp',2],['sideDelt',1],['triPush',1],['biHammer',2],['traps',3]]],
-  loB:  ['Lower B', [['calves',2],['hamCurl',1],['hinge',1],['quadIso',1],['legPress',1],['glute',3]]],
+  fb:   ['Full Body', [['chestIncline',1],['vPull',1],['chestFly',2],['hRow',1],['sideDelt',1],['triOH',1],['biLong',1],['squat',1],['hamCurl',1],['quadIso',2],['hinge',2],['calves',2],['latIso',3],['biHammer',3],['abs',3]]],
+  up:   ['Upper', [['chestIncline',1],['vPull',1],['chestFly',1],['hRow',1],['latIso',2],['sideDelt',1],['triOH',1],['biLong',1],['rearDelt',2],['triPush',3],['biHammer',3],['traps',3]]],
+  lo:   ['Lower', [['calves',1],['quadIso',1],['squat',1],['hamCurl',1],['hinge',1],['legPress',2],['glute',3],['abs',3]]],
   ant:  ['Anterior', [['chestIncline',1],['chestPress',2],['chestFly',1],['ohp',2],['sideDelt',1],['triOH',1],['biLong',1],['quadIso',1],['squat',1],['abs',3]]],
   post: ['Posterior', [['vPull',1],['hRow',1],['latIso',2],['rearDelt',1],['traps',2],['biHammer',3],['hamCurl',1],['hinge',1],['glute',2],['calves',2]]],
   push: ['Push', [['chestIncline',1],['chestPress',2],['chestFly',1],['ohp',2],['sideDelt',1],['triOH',1],['triPush',2]]],
@@ -49,19 +80,18 @@ const DAYS = {
   bLegs: ['Legs', [['calves',1],['quadIso',1],['squat',1],['hamCurl',1],['hinge',1],['legPress',2],['glute',3]]],
   bShld: ['Shoulders', [['ohp',1],['sideDelt',1],['rearDelt',1],['sideDelt',2],['traps',3]]],
   bArms: ['Arms', [['biLong',1],['triOH',1],['biHammer',1],['triPush',1],['abs',3]]]
-};
-// Split options per days a week. days = the rotation; it repeats to fill the week.
+};// Split options per days a week. days = the rotation; it repeats to fill the week.
 const SPLITS = {
-  2: [{id:'fb', name:'Full body A/B', days:['fbA','fbB'], why:'Two full-body days: every muscle twice a week.'}],
-  3: [{id:'fbEOD', name:'Full body every other day', days:['fbA','fbB'], why:'Alternate A and B. Every muscle hit every other day, short focused sessions.'},
+  2: [{id:'fb', name:'Full body', days:['fb'], why:'The same full-body session twice a week: every muscle twice a week.'}],
+  3: [{id:'fbEOD', name:'Full body every other day', days:['fb'], why:'One full-body session, every other day. Every muscle hit 3–4 times a week.'},
       {id:'ppl', name:'Push / Pull / Legs', days:['push','pull','legs'], why:'Each muscle once a week, so every set goes all out.'}],
-  4: [{id:'ul', name:'Upper / Lower', days:['upA','loA','upB','loB'], why:'Upper and lower twice: each muscle twice a week.'},
+  4: [{id:'ul', name:'Upper / Lower', days:['up','lo'], why:'Upper, Lower, Upper, Lower: each muscle twice a week.'},
       {id:'ap', name:'Anterior / Posterior', days:['ant','post'], why:'Front of the body, then back of the body. Twice each a week.'},
-      {id:'fbEOD', name:'Full body every other day', days:['fbA','fbB'], why:'Alternate A and B: every muscle hit about twice a week.'}],
-  5: [{id:'pplul', name:'Push / Pull / Legs / Upper / Lower', days:['push','pull','legs','upA','loA'], why:'Five days, every muscle twice a week, about an hour each.'},
+      {id:'fbEOD', name:'Full body every other day', days:['fb'], why:'One full-body session every other day.'}],
+  5: [{id:'pplul', name:'Push / Pull / Legs / Upper / Lower', days:['push','pull','legs','up','lo'], why:'Five days, every muscle twice a week, about an hour each.'},
       {id:'bro', name:'Bro split', days:['bChest','bBack','bLegs','bShld','bArms'], why:'One body part a day. Each muscle once a week, so you can absolutely bury it.'}],
-  6: [{id:'ppl2', name:'Push / Pull / Legs ×2', days:['push','pull','legs'], why:'PPL twice a week: high frequency, still low volume per session.'},
-      {id:'ap3', name:'Anterior / Posterior ×3', days:['ant','post'], why:'Front and back days, three of each a week.'}]
+  6: [{id:'ppl2', name:'Push / Pull / Legs', days:['push','pull','legs'], why:'Push, Pull, Legs, then again: every muscle twice a week.'},
+      {id:'ap3', name:'Anterior / Posterior', days:['ant','post'], why:'Front and back days, three of each a week.'}]
 };
 const SCHEDULE = {2:'e.g. Mon & Thu', 3:'e.g. Mon, Wed, Fri', 4:'e.g. Mon, Tue, Thu, Fri', 5:'e.g. Mon–Fri', 6:'e.g. Mon–Sat, Sunday off'};
 const STYLES = {
@@ -70,10 +100,30 @@ const STYLES = {
   std3:  {name:'3 sets, leave 1–2 in the tank', sub:'Easier to recover from while you learn the moves.', sets:3, effort:'stop 1–2 reps short of failure'}
 };
 const FOCUS = [['chest','Chest'],['back','Back'],['shoulders','Shoulders'],['arms','Arms'],['legs','Legs'],['glutes','Glutes']];
-const FOCUS_OF = {chest:['chest'], lats:['back'], upperback:['back'], traps:['back'], shoulders:['shoulders'], biceps:['arms'], triceps:['arms'], quads:['legs'], hamstrings:['legs','glutes'], glutes:['glutes'], calves:['legs'], abs:[]};
+const FOCUS_OF = {forearms:['arms'], chest:['chest'], lats:['back'], upperback:['back'], traps:['back'], shoulders:['shoulders'], biceps:['arms'], triceps:['arms'], quads:['legs'], hamstrings:['legs','glutes'], glutes:['glutes'], calves:['legs'], abs:[]};
 const EQUIP = {full:['m','b','d','w'], basic:['b','d','w'], home:['d','w']};
 
-function slotOptions(key, equip){ const ok = EQUIP[equip] || EQUIP.full; return SLOTS[key].opts.filter(o => ok.includes(o[1])); }
+/** Options for a slot: its muscle's whole pool (equipment-filtered), ★ preferred moves first, minus names in 'exclude'. */
+function slotOptions(key, equip, exclude){
+  const ok = EQUIP[equip] || EQUIP.full, sl = SLOTS[key], pool = POOLS[sl.pool].filter(o => ok.includes(o[1]));
+  const rank = o => { const i = sl.prefer.indexOf(o[0]); return i < 0 ? 99 + pool.indexOf(o) : i; };
+  return pool.slice().sort((a, b) => rank(a) - rank(b)).filter(o => !(exclude || []).includes(o[0]));
+}
+/** Resolve the movement for every slot: your pick, else the first ★ option not already used that day. */
+function resolvePicks(plan, picks, equip){
+  const out = {};
+  plan.forEach((day, di) => {
+    const used = [];
+    day.slots.forEach((x, si) => { const id = di + ':' + si; if (picks[id]) used.push(picks[id]); });
+    day.slots.forEach((x, si) => {
+      const id = di + ':' + si;
+      if (picks[id]) { out[id] = picks[id]; return; }
+      const o = slotOptions(x.slot, equip, used)[0] || slotOptions(x.slot, equip)[0];
+      out[id] = o[0]; used.push(o[0]);
+    });
+  });
+  return out;
+}
 function splitOf(u){ const list = SPLITS[u.days] || SPLITS[4]; return list.find(s => s.id === u.split) || list[0]; }
 function repsFor(slot, u){
   const small = SLOTS[slot].small, light = u.exp === 'beginner' || u.reps === 'moderate';
@@ -97,11 +147,19 @@ function buildPlan(u){
     const opener = x => (x.slot === 'calves' || x.slot === 'quadIso') && list.indexOf(x) < 2;
     list = list.filter(opener).concat(list.filter(x => !opener(x) && x.focus), list.filter(x => !opener(x) && !x.focus));
     const cap = +u.session || 60;
+    // never drop the last exercise for a major muscle group in the day
+    const MAJOR = {chest:'chest', lats:'back', upperback:'back', shoulders:'shoulders', triceps:'triceps', biceps:'biceps', quads:'quads', hamstrings:'hamstrings'};
+    const lastOfGroup = x => { const g = MAJOR[SLOTS[x.slot].m]; return g && list.filter(y => MAJOR[SLOTS[y.slot].m] === g).length === 1; };
     for (const p of [3, 2, 1]) {
       while (minutes(list) > cap && list.length > 4) {
-        let i = -1; for (let k = list.length - 1; k >= 0; k--) if (list[k].p === p && !list[k].focus) { i = k; break; }
+        let i = -1; for (let k = list.length - 1; k >= 0; k--) if (list[k].p === p && !list[k].focus && !lastOfGroup(list[k])) { i = k; break; }
         if (i < 0) break; list.splice(i, 1);
       }
+    }
+    // still too long: take a set off the biggest slots (never below 2) rather than lose a muscle
+    while (minutes(list) > cap) {
+      const c = list.filter(x => x.sets > 2).sort((a, b) => b.sets - a.sets)[0];
+      if (!c) break; c.sets--;
     }
     return {key:dk, name, slots:list, minutes:minutes(list)};
   });
@@ -115,7 +173,7 @@ function weeklySets(plan, u){
 
 /* ---------- onboarding ---------- */
 let OB = null;
-const PLAN_VERSION = 2;
+const PLAN_VERSION = 3;
 function startOnboarding(fromSettings){
   const p = S.food.profile, u = S.user || {};
   OB = {step:0, fromSettings:!!fromSettings, picks:{}, pickIdx:0,
@@ -134,13 +192,12 @@ function obBack(){
   if (OB.step === 0) { if (OB.fromSettings) closeOB(); return true; }
   OB.step--; if (OB_STEPS[OB.step] === 'pick') OB.pickIdx = Math.max(0, pickList().length - 1); drawOB(); return true;
 }
-function closeOB(){ const el = $('#ob'); if (el) el.remove(); OB = null; render(); }
+function closeOB(){ const el = $('#ob'); if (el) el.remove(); OB = null; if (S.user) { S.user.skipVer = PLAN_VERSION; save(); } render(); }
 function pickList(){
   const plan = buildPlan(OB.d), out = [];
   plan.forEach((day, di) => day.slots.forEach((x, si) => out.push({di, si, day, x, id:di + ':' + si})));
   return out;
 }
-function defaultPick(it){ return slotOptions(it.x.slot, OB.d.equip)[0][0]; }
 const lbToKg = lb => lb * 0.45359237;
 function heightText(cm){ const inch = cm / 2.54; return Math.floor(inch / 12) + ' ft ' + Math.round(inch % 12) + ' in'; }
 function drawOB(){
@@ -212,10 +269,16 @@ function drawOB(){
     next = 'Pick my movements';
   } else if (step === 'pick') {
     const list = pickList(), it = list[OB.pickIdx];
-    const opts = slotOptions(it.x.slot, d.equip), cur = OB.picks[it.id] || opts[0][0];
+    const resolved = resolvePicks(buildPlan(d), OB.picks, d.equip);
+    // other movements already in this day (yours or the defaults) aren't offered again
+    const sameDay = list.filter(o => o.di === it.di && o.id !== it.id).map(o => resolved[o.id]);
+    const opts = slotOptions(it.x.slot, d.equip, sameDay), cur = OB.picks[it.id] || resolved[it.id];
     const slot = SLOTS[it.x.slot];
+    const nth = list.filter(o => o.di === it.di && o.si < it.si && SLOTS[o.x.slot].m === slot.m).length;
     h += `<div class="muted small">${esc(it.day.name)} · ${OB.pickIdx + 1} of ${list.length}</div>
-      <h1>You need ${slot.what}</h1><p class="muted">For your ${MUSCLE_NAMES[slot.m].toLowerCase()} · ${it.x.sets} × ${it.x.reps} reps, ${it.x.effort}. Pick one:</p>` +
+      <h1>${nth ? 'Another ' + slot.label.toLowerCase() : slot.label} movement</h1>
+      <p class="muted">${it.x.sets} × ${it.x.reps} reps, ${it.x.effort}. Pick anything that hits it: presses, flies, cables, whatever you feel most.</p>
+      ${sameDay.length ? `<div class="muted small" style="margin:-6px 0 10px">Already in ${esc(it.day.name)}: ${sameDay.map(esc).join(', ')}</div>` : ''}` +
       opts.map((o, i) => `<button class="ob-opt ${cur === o[0] ? 'on' : ''}" data-pick="${esc(o[0])}"><b>${i === 0 ? '★ ' : ''}${esc(o[0])}</b><span>${i === 0 ? 'Recommended' + (o[2] ? ' · ' + esc(o[2]) : '') : esc(o[2] || '')}</span></button>`).join('') +
       `<button class="ghost wide" data-ob="auto">Use ★ for the rest</button>`;
     next = OB.pickIdx < list.length - 1 ? 'Next' : 'Review';
@@ -230,7 +293,7 @@ function drawOB(){
       <div class="card"><b>Daily food targets</b><div class="macro4"><div><b>${fmtNum(sug.kcal)}</b><span>kcal</span></div><div><b style="color:var(--p)">${sug.protein}</b><span>protein</span></div><div><b style="color:var(--c)">${sug.carbs}</b><span>carbs</span></div><div><b style="color:var(--f)">${sug.fat}</b><span>fat</span></div></div>
       <div class="muted small">Weigh in a few times a week. After 4 weeks the Body tab tells you if calories need moving.</div></div>` +
       plan.map((day, di) => `<div class="card"><b>${esc(day.name)}</b>${day.slots.map((x, si) => {
-        const name = OB.picks[di + ':' + si] || slotOptions(x.slot, d.equip)[0][0];
+        const name = resolvePicks(plan, OB.picks, d.equip)[di + ':' + si];
         return `<div class="item small" style="padding:4px 0"><span>${esc(name)}</span><span class="muted">${x.sets} × ${x.reps}</span></div>`; }).join('')}</div>`).join('') +
       (S.routines.length ? `<label class="row" style="margin:12px 0;gap:12px"><button class="tick ${d.replace ? 'on' : ''}" data-k="replace" data-v="${d.replace ? '' : '1'}">${d.replace ? '✓' : ''}</button><span>Replace my current routines (past workouts are kept)</span></label>` : '');
     next = 'Start my plan';
@@ -265,7 +328,7 @@ function drawOB(){
     else if (a === 'next') {
       if (step === 'pick') {
         const list = pickList(), it = list[OB.pickIdx];
-        if (!OB.picks[it.id]) OB.picks[it.id] = defaultPick(it);
+        if (!OB.picks[it.id]) OB.picks[it.id] = resolvePicks(buildPlan(d), OB.picks, d.equip)[it.id];
         if (OB.pickIdx < list.length - 1) { OB.pickIdx++; drawOB(); el.scrollTop = 0; return; }
       }
       if (step === 'done') { finishOnboarding(); return; }
@@ -287,8 +350,9 @@ function finishOnboarding(){
   if (!S.body.weights.length || Math.abs(S.body.weights[S.body.weights.length - 1].kg - d.weight) > 0.05) {
     S.body.weights = S.body.weights.filter(w => w.d !== today()).concat({d:today(), kg:r1(d.weight)}).sort((a, b) => a.d.localeCompare(b.d));
   }
+  const names = resolvePicks(plan, OB.picks, d.equip);
   const routines = plan.map((day, di) => ({id:uid(), name:day.name, items:day.slots.map((x, si) => ({
-    exId:exIdByName(OB.picks[di + ':' + si] || slotOptions(x.slot, d.equip)[0][0]), sets:x.sets, reps:x.reps, rest:x.rest, effort:x.effort}))}));
+    exId:exIdByName(names[di + ':' + si]), sets:x.sets, reps:x.reps, rest:x.rest, effort:x.effort}))}));
   const oldProgram = S.program ? S.program.ids : [];
   S.routines = d.replace ? routines : routines.concat(S.routines.filter(r => !oldProgram.includes(r.id)));
   S.program = {split:sp.name, ids:routines.map(r => r.id), created:Date.now()};
