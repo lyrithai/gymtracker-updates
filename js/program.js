@@ -2,7 +2,8 @@
 /* ================= program builder + onboarding =================
    The house mentality (from the coaches the owner follows: Keenan Malloy, Jacob Oestreicher, TNF, Naz Darwen, LividDak):
    - few working sets (1-2 per exercise), taken to failure or 0-1 reps short; warm-ups don't count; no junk volume
-   - heavy-ish reps (5-9) for most moves, 8-12 for small muscles; beginners 8-12
+   - TNF-first: max 10 direct hard sets per muscle a week, all to failure; 6-10 reps; no overhead press on chest-press days; max 2 chest moves a session; long rests; few warm-ups
+   - 8-12 for small muscles; beginners 8-12
    - double progression: reps first, then the smallest weight jump; same weight for weeks is normal
    - machines and cables set up so the target muscle is the limit; signature moves (Keenan flaps, Kelso shrug, TNF press, JM press)
    - leg days start with calves and leg extensions; priority muscles go first
@@ -69,16 +70,16 @@ const DAYS = {
   fb:   ['Full Body', [['chestIncline',1],['vPull',1],['chestFly',2],['hRow',1],['sideDelt',1],['triOH',1],['triPush',1],['biLong',1],['squat',1],['hamCurl',1],['quadIso',2],['hinge',2],['calves',2],['latIso',3],['biHammer',3],['abs',3]]],
   up:   ['Upper', [['chestIncline',1],['vPull',1],['chestFly',1],['hRow',1],['latIso',2],['sideDelt',1],['triOH',1],['triPush',1],['biLong',1],['rearDelt',2],['traps',2],['biHammer',3]]],
   lo:   ['Lower', [['calves',1],['quadIso',1],['squat',1],['hamCurl',1],['hinge',1],['legPress',2],['glute',3],['abs',3]]],
-  ant:  ['Anterior', [['chestIncline',1],['chestPress',2],['chestFly',1],['ohp',2],['sideDelt',1],['triOH',1],['triPush',1],['biLong',1],['quadIso',1],['squat',1],['abs',3]]],
+  ant:  ['Anterior', [['chestIncline',1],['chestFly',1],['sideDelt',1],['triOH',1],['triPush',1],['biLong',1],['quadIso',1],['squat',1],['abs',3]]],
   post: ['Posterior', [['vPull',1],['hRow',1],['latIso',2],['rearDelt',1],['traps',2],['biHammer',3],['hamCurl',1],['hinge',1],['glute',2],['calves',2]]],
-  push: ['Push', [['chestIncline',1],['chestPress',2],['chestFly',1],['ohp',2],['sideDelt',1],['triOH',1],['triPush',1]]],
-  pull: ['Pull', [['vPull',1],['hRow',1],['latIso',1],['rearDelt',1],['traps',2],['biLong',1],['biHammer',2]]],
+  push: ['Push', [['chestIncline',1],['chestFly',1],['sideDelt',1],['triOH',1],['triPush',1],['rearDelt',3]]],
+  pull: ['Pull', [['vPull',1],['hRow',1],['latIso',1],['rearDelt',1],['traps',2],['biLong',1],['biLong',2],['biHammer',2]]],
   legs: ['Legs', [['calves',1],['quadIso',1],['squat',1],['hamCurl',1],['hinge',1],['legPress',2],['abs',2]]],
   bChest:['Chest', [['chestIncline',1],['chestPress',1],['chestFly',1],['triOH',2],['triPush',2],['abs',3]]],
   bBack: ['Back', [['vPull',1],['hRow',1],['latIso',1],['traps',2],['rearDelt',2]]],
   bLegs: ['Legs', [['calves',1],['quadIso',1],['squat',1],['hamCurl',1],['hinge',1],['legPress',2],['glute',3]]],
   bShld: ['Shoulders', [['ohp',1],['sideDelt',1],['rearDelt',1],['sideDelt',2],['traps',3]]],
-  bArms: ['Arms', [['biLong',1],['triOH',1],['biHammer',1],['triPush',1],['abs',3]]]
+  bArms: ['Arms', [['biLong',1],['triOH',1],['biLong',1],['triPush',1],['biHammer',2],['abs',3]]]
 };// Split options per days a week. days = the rotation; it repeats to fill the week.
 const SPLITS = {
   2: [{id:'fb', name:'Full body', days:['fb'], why:'The same full-body session twice a week: every muscle twice a week.'}],
@@ -94,9 +95,9 @@ const SPLITS = {
 };
 const SCHEDULE = {2:'e.g. Mon & Thu', 3:'e.g. Mon, Wed, Fri', 4:'e.g. Mon, Tue, Thu, Fri', 5:'e.g. Mon–Fri', 6:'e.g. Mon–Sat, Sunday off'};
 const STYLES = {
-  hard2: {name:'2 hard sets per exercise', sub:'Recommended. First set 1 rep short of failure, last set to failure.', sets:2, effort:'last set to failure'},
+  hard2: {name:'2 hard sets, both to failure', sub:'Recommended. Volume is low, so every working set goes all the way.', sets:2, effort:'both sets to failure'},
   max1:  {name:'1 all-out set, more exercises', sub:'Maximalist: one set to failure per exercise, more angles per muscle.', sets:1, effort:'one all-out set to failure'},
-  std3:  {name:'3 sets, leave 1–2 in the tank', sub:'Easier to recover from while you learn the moves.', sets:3, effort:'stop 1–2 reps short of failure'}
+  std3:  {name:'3 sets, pick which go to failure', sub:'More sets means more fatigue, so only the last set goes to failure, the rest stop 1–2 short.', sets:3, effort:'last set to failure, the rest 1–2 short'}
 };
 const FOCUS = [['chest','Chest'],['back','Back'],['shoulders','Shoulders'],['arms','Arms'],['legs','Legs'],['glutes','Glutes']];
 const FOCUS_OF = {forearms:['arms'], chest:['chest'], lats:['back'], upperback:['back'], traps:['back'], shoulders:['shoulders'], biceps:['arms'], triceps:['arms'], quads:['legs'], hamstrings:['legs','glutes'], glutes:['glutes'], calves:['legs'], abs:[]};
@@ -129,11 +130,12 @@ const WEEKDAY_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturd
 const CUSTOM_MUSCLES = [['chest','Chest'],['back','Back'],['shoulders','Shoulders'],['biceps','Biceps'],['triceps','Triceps'],['forearms','Forearms'],
   ['traps','Traps'],['quads','Quads'],['hamstrings','Hamstrings'],['glutes','Glutes'],['calves','Calves'],['abs','Abs']];
 const CM_LABEL = Object.fromEntries(CUSTOM_MUSCLES);
-const MUSCLE_SLOTS = {chest:[['chestIncline',1],['chestFly',1],['chestPress',2]], back:[['vPull',1],['hRow',1],['latIso',2]],
+const MUSCLE_SLOTS = {chest:[['chestIncline',1],['chestFly',1],['chestPress',3]], back:[['vPull',1],['hRow',1],['latIso',2]],
   shoulders:[['sideDelt',1],['ohp',2],['rearDelt',2]], biceps:[['biLong',1]], triceps:[['triOH',1],['triPush',1]], forearms:[['biHammer',1]], traps:[['traps',1]],
   quads:[['quadIso',1],['squat',1],['legPress',2]], hamstrings:[['hamCurl',1],['hinge',1]], glutes:[['glute',1]], calves:[['calves',1]], abs:[['abs',1]]};
 const DAY_TEMPLATES = [['Push',['chest','shoulders','triceps']],['Pull',['back','biceps','forearms','traps']],['Legs',['quads','hamstrings','glutes','calves','abs']],
   ['Upper',['chest','back','shoulders','biceps','triceps','traps']],['Lower',['quads','hamstrings','glutes','calves','abs']],['Full Body',['chest','back','shoulders','biceps','triceps','quads','hamstrings']],
+  ['Anterior',['chest','shoulders','quads','biceps','triceps','abs']],['Posterior',['back','traps','forearms','hamstrings','glutes','calves']],
   ['Arms',['biceps','triceps','forearms']],['Chest & Back',['chest','back']],['Shoulders & Arms',['shoulders','biceps','triceps']]];
 const DEFAULT_WEEK = [['chest','shoulders','triceps'],['back','biceps','forearms','traps'],['quads','hamstrings','glutes','calves','abs'],[],['chest','back','shoulders','biceps','triceps','traps'],['quads','hamstrings','glutes','calves','abs'],[]];
 const UPPER_M = ['chest','back','shoulders','biceps','triceps','forearms','traps'];
@@ -152,6 +154,10 @@ function customDays(week){
     const order = legsOnly ? ['calves','quads','hamstrings','glutes','abs'] : CUSTOM_MUSCLES.map(([k]) => k);
     let slots = [];
     order.filter(m => ms.includes(m)).forEach(m => slots = slots.concat(MUSCLE_SLOTS[m]));
+    // chest pressing already hammers the front delts: no overhead press on the same day
+    if (ms.includes('chest')) slots = slots.filter(([s]) => s !== 'ohp');
+    // max 2 chest movements a session, unless it's a dedicated chest day
+    if (ms.length > 2) slots = slots.filter(([s]) => s !== 'chestPress');
     // few muscles in the day = room for more work on each (bro-split style)
     if (ms.length <= 3) {
       if (ms.includes('biceps')) slots.push(['biLong', 2]);
@@ -170,7 +176,7 @@ function splitOf(u){
 }
 function repsFor(slot, u){
   const small = SLOTS[slot].small, light = u.exp === 'beginner' || u.reps === 'moderate';
-  return light ? (small ? '10-15' : '8-12') : (small ? '8-12' : '5-9');
+  return light ? (small ? '10-15' : '8-12') : (small ? '8-12' : '6-10');
 }
 /** Days -> [{key, name, weekday?, slots:[{slot, sets, reps, rest, effort}]}] fitted to the session length. */
 function buildPlan(u){
@@ -178,14 +184,14 @@ function buildPlan(u){
   const focusOf = x => (u.focus || []).some(f => (FOCUS_OF[SLOTS[x.slot].m] || []).includes(f));
   const minutes = list => Math.round(5 + list.reduce((a, x) => a + x.sets * 2.5 + 1.5, 0));   // warm-up + ~2.5 min a hard set incl. rest + setup
   const raw = split.custom ? customDays(u.week || DEFAULT_WEEK) : split.days.map(dk => ({key:dk, name:DAYS[dk][0], raw:DAYS[dk][1]}));
-  return raw.map(day => {
+  const days = raw.map(day => {
     let list = day.raw.filter(([s]) => slotOptions(s, u.equip).length).map(([slot, p]) => {
       let sets = style.sets;
       if (style.sets === 1 && ['quadIso','calves','traps'].includes(slot)) sets = 2;   // the usual two-set exceptions
       if (style.sets === 3 && SLOTS[slot].small) sets = 2;
       if (slot === 'triOH') sets = style.sets === 3 ? 2 : 1;   // overhead: 1-2 sets (long head at stretch is brutal)
       if (slot === 'triPush') sets = 2;                        // normal triceps move: 2 sets
-      return {slot, p, sets, reps:repsFor(slot, u), rest:SLOTS[slot].big ? 150 : 90, effort:slot === 'triOH' && sets === 1 ? 'one set to failure, add a 2nd if you feel fresh' : style.effort};
+      return {slot, p, sets, reps:repsFor(slot, u), rest:SLOTS[slot].big ? 180 : 120, effort:slot === 'triOH' && sets === 1 ? 'one set to failure, add a 2nd if you feel fresh' : style.effort};
     });
     list.forEach(x => { if (focusOf(x)) { x.sets += 1; x.focus = true; } });
     // priority muscles first (but calves and leg extensions keep opening leg days)
@@ -209,6 +215,38 @@ function buildPlan(u){
     }
     return {key:day.key, name:day.name, weekday:day.weekday, slots:list, minutes:minutes(list)};
   });
+  capWeekly(days, u, focusOf);
+  days.forEach(d => d.minutes = minutes(d.slots));
+  return days;
+}
+/** Max 10 direct hard sets per muscle group a week (12 for a focus muscle): every set is to failure, more is just fatigue. */
+const CAP_GROUP = {lats:'back', upperback:'back'};
+function capWeekly(days, u, focusOf){
+  const per = u.split === 'custom' ? 1 : (u.days || days.length) / days.length;
+  const grp = x => CAP_GROUP[SLOTS[x.slot].m] || SLOTS[x.slot].m;
+  const minSets = x => x.slot === 'triOH' ? 1 : x.slot === 'triPush' ? 2 : 1;
+  const stuck = new Set();   // groups that can't go lower (e.g. the triceps 1+2 rule)
+  for (let guard = 0; guard < 300; guard++) {
+    const w = {}, foc = {};
+    days.forEach(d => d.slots.forEach(x => { w[grp(x)] = (w[grp(x)] || 0) + x.sets * per; if (x.focus) foc[grp(x)] = true; }));
+    const over = Object.keys(w).filter(g => !stuck.has(g) && w[g] > (foc[g] ? 12 : 10) + 0.01).sort((a, b) => w[b] - w[a]);
+    if (!over.length) return;
+    const g = over[0];
+    // 1) drop an extra slot for that muscle (lowest priority, not the day's only one, not a triceps pair member)
+    let best = null;
+    days.forEach(d => d.slots.forEach((x, i) => {
+      if (grp(x) !== g || x.focus || x.slot === 'triOH' || x.slot === 'triPush') return;
+      if (d.slots.filter(y => grp(y) === g).length < 2) return;
+      if (!best || x.p > best.x.p) best = {d, i, x};
+    }));
+    if (best && best.x.p >= 2) { best.d.slots.splice(best.i, 1); continue; }
+    // 2) otherwise take a set off the slot with the most sets
+    let cand = null;
+    days.forEach(d => d.slots.forEach(x => { if (grp(x) === g && x.sets > minSets(x) && (!cand || x.sets > cand.sets)) cand = x; }));
+    if (cand) { cand.sets--; continue; }
+    if (best) { best.d.slots.splice(best.i, 1); continue; }
+    stuck.add(g);
+  }
 }
 function weeklySets(plan, u){
   const custom = u && u.split === 'custom';
@@ -260,7 +298,7 @@ function analyzeWeek(week){
     const n = freq(m);
     if (!n) tips.push({t:'warn', msg:`No ${L(m).toLowerCase()} this week. Add it to a day${m === 'biceps' || m === 'triceps' ? ' (pulls/presses hit it a bit, but not enough)' : ''}.`});
     else if (n === 1) tips.push({t:'tip', msg:`${L(m)} once a week: fine if every set goes to failure, but twice a week usually grows faster.`});
-    else if (n >= 4) tips.push({t:'tip', msg:`${L(m)} ${n} times a week: keep it to 1–2 sets per session so it can recover.`});
+    else if (n >= 3) tips.push({t:'tip', msg:`${L(m)} ${n} times a week: the plan keeps it under 10 hard sets a week, so expect 1–2 sets each session. Every set to failure, no junk volume.`});
   });
   let run = 0, best = 0; for (let k = 0; k < 14; k++) { if (week[k % 7].length) { run++; best = Math.max(best, run); } else run = 0; }
   if (trainDays.length === 7) tips.push({t:'warn', msg:'No rest day. Even with low volume, take at least one full day off a week.'});
@@ -270,7 +308,7 @@ function analyzeWeek(week){
 }
 /* ---------- onboarding ---------- */
 let OB = null;
-const PLAN_VERSION = 4;
+const PLAN_VERSION = 5;
 function startOnboarding(fromSettings){
   const p = S.food.profile, u = S.user || {};
   OB = {step:0, fromSettings:!!fromSettings, picks:{}, pickIdx:0,
@@ -339,7 +377,7 @@ function drawOB(){
       [[1.375,'Mostly sitting','Desk job or student'],[1.55,'On your feet a bit','About 7–10k steps'],[1.725,'On your feet all day','Active job or 15k+ steps'],[1.9,'Very active','Manual work plus lots of steps']].map(([v, l, s]) => choice('activity', v, l, s)).join('');
   } else if (step === 'experience') {
     h += `<h1>How long have you trained properly?</h1>` +
-      [['beginner','Under a year','8–12 reps while you learn the moves and how failure feels'],['intermediate','1–3 years','Heavier 5–9 reps'],['advanced','3+ years','Heavier 5–9 reps, you know your failure']].map(([v, l, s]) => choice('exp', v, l, s)).join('');
+      [['beginner','Under a year','8–12 reps while you learn the moves and how failure feels'],['intermediate','1–3 years','6–10 reps: add reps, then weight'],['advanced','3+ years','6–10 reps, you know where your failure is']].map(([v, l, s]) => choice('exp', v, l, s)).join('');
   } else if (step === 'training') {
     const opts = SPLITS[d.days].concat([{id:'custom', name:'🗓️ Custom split', why:'Build your own week on a 7-day calendar. Tips warn you about overlap and recovery as you go.'}]);
     if (!opts.some(s => s.id === d.split)) d.split = opts[0].id;
@@ -365,7 +403,7 @@ function drawOB(){
   } else if (step === 'style') {
     h += `<h1>How hard do you want each set?</h1><p class="muted">Every working set should be close to failure. Warm-ups don't count.</p>` +
       Object.entries(STYLES).map(([k, s]) => choice('style', k, s.name, s.sub)).join('') +
-      (d.exp === 'beginner' ? '' : `<label class="f">Rep ranges</label><div class="seg">${[['heavy','Heavy 5–9'],['moderate','Moderate 8–12']].map(([v, l]) => `<button data-k="reps" data-v="${v}" class="${d.reps === v ? 'on' : ''}">${l}</button>`).join('')}</div>`);
+      (d.exp === 'beginner' ? '' : `<label class="f">Rep ranges</label><div class="seg">${[['heavy','Heavy 6–10'],['moderate','Moderate 8–12']].map(([v, l]) => `<button data-k="reps" data-v="${v}" class="${d.reps === v ? 'on' : ''}">${l}</button>`).join('')}</div>`);
   } else if (step === 'focus') {
     h += `<h1>Any muscles to bring up?</h1><p class="muted">Optional, up to 2. They go first in the session, when you're freshest, and get an extra set.</p>` +
       FOCUS.map(([v, l]) => choice('focus', v, l, '', true)).join('');
@@ -377,7 +415,7 @@ function drawOB(){
     h += `<h1>${esc(sp.name)}</h1><p class="muted">${sp.custom ? 'Your week, as you laid it out.' : sp.why + ' ' + SCHEDULE[d.days] + (plan.length < d.days ? ', repeating the rotation' : '') + '.'}</p>` +
       plan.map((day, i) => `<div class="card"><div class="item"><b>${day.weekday != null ? WEEKDAYS[day.weekday] + ' · ' : ''}${esc(day.name)}</b><span class="muted small">~${day.minutes} min</span></div><div class="row" style="align-items:flex-start;gap:8px"><div class="chips grow">${day.slots.map(x => `<span class="chip ${x.focus ? 'hot' : ''}">${esc(SLOTS[x.slot].label)} · ${x.sets}×${x.reps}</span>`).join('')}</div>${miniBody([].concat(...day.slots.map(x => SLOT_KEYS[x.slot] || [])), 96)}</div></div>`).join('') +
       `<div class="sec">Hard sets per muscle per week</div><div class="chips">${Object.entries(ws).map(([m, n]) => `<span class="chip">${MUSCLE_NAMES[m]} ${n}</span>`).join('')}</div>
-      <p class="muted small">Low volume on purpose: every one of these sets is to failure or 1 rep short. Next you pick a movement for each slot. Not sure? ★ is the pick.</p>
+      <p class="muted small">Low volume on purpose: capped at 10 hard sets per muscle a week, and every set goes to failure. Next you pick a movement for each slot. Not sure? ★ is the pick.</p>
       <button class="ghost wide" data-ob="auto">Pick everything for me</button>`;
     next = 'Pick my movements';
   } else if (step === 'pick') {
@@ -390,7 +428,7 @@ function drawOB(){
     const nth = list.filter(o => o.di === it.di && o.si < it.si && SLOTS[o.x.slot].m === slot.m).length;
     h += `<div class="muted small">${esc(it.day.name)} · ${OB.pickIdx + 1} of ${list.length}</div>
       <div class="row" style="align-items:center;gap:10px"><h1 class="grow">${esc(slot.label)}</h1>${miniBody(SLOT_KEYS[it.x.slot], 110)}</div>
-      <p class="muted">${it.x.sets} × ${it.x.reps} reps, ${it.x.effort}. Pick whatever hits it best for you.</p>
+      <p class="muted">${it.x.sets} × ${it.x.reps} reps, ${it.x.effort}. Pick whatever hits it best for you.${slot.m === 'chest' ? ' Presses and flies both work: fly-only chest is fine if presses beat up your shoulders or triceps.' : ''}</p>
       ${sameDay.length ? `<div class="muted small" style="margin:-6px 0 10px">Already in ${esc(it.day.name)}: ${sameDay.map(esc).join(', ')}</div>` : ''}` +
       opts.map((o, i) => `<button class="ob-opt ${cur === o[0] ? 'on' : ''}" data-pick="${esc(o[0])}"><b>${i === 0 ? '★ ' : ''}${esc(o[0])}</b><span>${i === 0 ? 'Recommended' + (o[2] ? ' · ' + esc(o[2]) : '') : esc(o[2] || '')}</span></button>`).join('') +
       `<button class="ghost wide" data-ob="auto">Use ★ for the rest</button>`;
@@ -400,9 +438,9 @@ function drawOB(){
     const sug = suggestTargets({sex:d.sex, age:d.age, height:d.height, weight:d.weight, activity:d.activity, goal:d.nGoal});
     h += `<h1>${d.name ? esc(d.name) + ', your' : 'Your'} plan is ready</h1>
       <div class="card"><b>The rules</b><div class="small" style="margin-top:6px;line-height:1.6">
-        • Warm up your first lift with 2–3 lighter sets. They don't count.<br>• Every working set: ${STYLES[d.style].effort}.<br>
+        • Max 10 hard sets per muscle a week. Every set is to failure, so more just piles on fatigue.<br>• Warm up with 1–2 quick ramp-up sets on your first lift. Save your energy for the working sets.<br>• Every working set: ${STYLES[d.style].effort}.<br>• Rest fully: about 3 minutes on big lifts, 2 on the rest. Longer rest means you need fewer sets.<br>
         • Hit the top of the rep range on every set → add the smallest weight jump next time.<br>• Same weight for a few weeks is normal. Beat the logbook by a rep.<br>
-        • Full control on the way down, same end point every rep. No ego.</div></div>
+        • Set every machine to your leverages: seat and pads so the target muscle hits a full stretch.<br>• Short on time? Finish the last set with myo-reps or a mechanical drop set instead of adding sets.<br>• Full control on the way down, same end point every rep. No ego.</div></div>
       <div class="card"><b>Daily food targets</b><div class="macro4"><div><b>${fmtNum(sug.kcal)}</b><span>kcal</span></div><div><b style="color:var(--p)">${sug.protein}</b><span>protein</span></div><div><b style="color:var(--c)">${sug.carbs}</b><span>carbs</span></div><div><b style="color:var(--f)">${sug.fat}</b><span>fat</span></div></div>
       <div class="muted small">Weigh in a few times a week. After 4 weeks the Body tab tells you if calories need moving.</div></div>` +
       plan.map((day, di) => `<div class="card"><b>${day.weekday != null ? WEEKDAY_FULL[day.weekday] + ': ' : ''}${esc(day.name)}</b>${day.slots.map((x, si) => {
