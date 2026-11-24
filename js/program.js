@@ -67,7 +67,7 @@ const SLOTS = {
 // Day templates: [slot, priority] (1 = core, 2 = important, 3 = extra; time limits drop 3s then 2s first)
 const DAYS = {
   fb:   ['Full Body', [['chestIncline',1],['vPull',1],['chestFly',2],['hRow',1],['sideDelt',1],['triOH',1],['triPush',1],['biLong',1],['squat',1],['hamCurl',1],['quadIso',2],['hinge',2],['calves',2],['latIso',3],['biHammer',3],['abs',3]]],
-  up:   ['Upper', [['chestIncline',1],['vPull',1],['chestFly',1],['hRow',1],['latIso',2],['sideDelt',1],['triOH',1],['triPush',1],['biLong',1],['rearDelt',2],['biHammer',3],['traps',3]]],
+  up:   ['Upper', [['chestIncline',1],['vPull',1],['chestFly',1],['hRow',1],['latIso',2],['sideDelt',1],['triOH',1],['triPush',1],['biLong',1],['rearDelt',2],['traps',2],['biHammer',3]]],
   lo:   ['Lower', [['calves',1],['quadIso',1],['squat',1],['hamCurl',1],['hinge',1],['legPress',2],['glute',3],['abs',3]]],
   ant:  ['Anterior', [['chestIncline',1],['chestPress',2],['chestFly',1],['ohp',2],['sideDelt',1],['triOH',1],['triPush',1],['biLong',1],['quadIso',1],['squat',1],['abs',3]]],
   post: ['Posterior', [['vPull',1],['hRow',1],['latIso',2],['rearDelt',1],['traps',2],['biHammer',3],['hamCurl',1],['hinge',1],['glute',2],['calves',2]]],
@@ -133,9 +133,9 @@ const MUSCLE_SLOTS = {chest:[['chestIncline',1],['chestFly',1],['chestPress',2]]
   shoulders:[['sideDelt',1],['ohp',2],['rearDelt',2]], biceps:[['biLong',1]], triceps:[['triOH',1],['triPush',1]], forearms:[['biHammer',1]], traps:[['traps',1]],
   quads:[['quadIso',1],['squat',1],['legPress',2]], hamstrings:[['hamCurl',1],['hinge',1]], glutes:[['glute',1]], calves:[['calves',1]], abs:[['abs',1]]};
 const DAY_TEMPLATES = [['Push',['chest','shoulders','triceps']],['Pull',['back','biceps','forearms','traps']],['Legs',['quads','hamstrings','glutes','calves','abs']],
-  ['Upper',['chest','back','shoulders','biceps','triceps']],['Lower',['quads','hamstrings','glutes','calves','abs']],['Full Body',['chest','back','shoulders','biceps','triceps','quads','hamstrings']],
+  ['Upper',['chest','back','shoulders','biceps','triceps','traps']],['Lower',['quads','hamstrings','glutes','calves','abs']],['Full Body',['chest','back','shoulders','biceps','triceps','quads','hamstrings']],
   ['Arms',['biceps','triceps','forearms']],['Chest & Back',['chest','back']],['Shoulders & Arms',['shoulders','biceps','triceps']]];
-const DEFAULT_WEEK = [['chest','shoulders','triceps'],['back','biceps','forearms','traps'],['quads','hamstrings','glutes','calves','abs'],[],['chest','back','shoulders','biceps','triceps'],['quads','hamstrings','glutes','calves','abs'],[]];
+const DEFAULT_WEEK = [['chest','shoulders','triceps'],['back','biceps','forearms','traps'],['quads','hamstrings','glutes','calves','abs'],[],['chest','back','shoulders','biceps','triceps','traps'],['quads','hamstrings','glutes','calves','abs'],[]];
 const UPPER_M = ['chest','back','shoulders','biceps','triceps','forearms','traps'];
 function dayName(ms){
   if (!ms.length) return 'Rest';
@@ -355,7 +355,9 @@ function drawOB(){
       W.map((m, i) => `<button class="cal-day ${i === cd ? 'on' : ''} ${m.length ? '' : 'rest'}" data-cal="${i}"><b>${WEEKDAYS[i]}</b><span>${esc(dayName(m))}</span></button>`).join('') +
       `</div><div class="card" style="margin-top:10px"><b>${WEEKDAY_FULL[cd]}: ${esc(dayName(ms))}</b>
         <div class="pills" style="margin:8px 0">${[['Rest', []]].concat(DAY_TEMPLATES).map(([n, l]) => `<button class="pill ${dayName(ms) === n ? 'on' : ''}" data-tpl="${esc(n)}">${esc(n)}</button>`).join('')}</div>
-        <div class="chips">${CUSTOM_MUSCLES.map(([k, l]) => `<button class="chip mchip ${ms.includes(k) ? 'hot' : ''}" data-mus="${k}">${ms.includes(k) ? '✓ ' : '+ '}${l}</button>`).join('')}</div></div>
+        <div class="row" style="align-items:flex-start;gap:8px"><div class="chips grow">${CUSTOM_MUSCLES.map(([k, l]) => `<button class="chip mchip ${ms.includes(k) ? 'hot' : ''}" data-mus="${k}">${ms.includes(k) ? '✓ ' : '+ '}${l}</button>`).join('')}</div>
+        ${miniBody([].concat(...ms.map(m => MUSCLE_KEYS[m] || [])), 170, [].concat(...(W[(cd + 6) % 7] || []).map(m => MUSCLE_KEYS[m] || [])))}</div>
+        ${(W[(cd + 6) % 7] || []).length ? `<div class="muted tiny" style="margin-top:6px">Bright = ${WEEKDAYS[cd]}. Faded = ${WEEKDAYS[(cd + 6) % 7]} (yesterday), so you can spot overlap.</div>` : ''}</div>
       <div class="sec">Coach's notes</div>` +
       tips.map(t => `<div class="coach ${t.t === 'good' ? 'up' : ''} ${t.t === 'warn' ? 'warn' : ''}">${t.t === 'warn' ? '⚠️' : t.t === 'good' ? '✅' : '💡'} ${esc(t.msg)}</div>`).join('');
     canNext = W.some(m => m.length);
@@ -373,7 +375,7 @@ function drawOB(){
   } else if (step === 'split') {
     const plan = buildPlan(d), ws = weeklySets(plan, d), sp = splitOf(d);
     h += `<h1>${esc(sp.name)}</h1><p class="muted">${sp.custom ? 'Your week, as you laid it out.' : sp.why + ' ' + SCHEDULE[d.days] + (plan.length < d.days ? ', repeating the rotation' : '') + '.'}</p>` +
-      plan.map((day, i) => `<div class="card"><div class="item"><b>${day.weekday != null ? WEEKDAYS[day.weekday] + ' · ' : ''}${esc(day.name)}</b><span class="muted small">~${day.minutes} min</span></div><div class="chips">${day.slots.map(x => `<span class="chip ${x.focus ? 'hot' : ''}">${esc(SLOTS[x.slot].label)} · ${x.sets}×${x.reps}</span>`).join('')}</div></div>`).join('') +
+      plan.map((day, i) => `<div class="card"><div class="item"><b>${day.weekday != null ? WEEKDAYS[day.weekday] + ' · ' : ''}${esc(day.name)}</b><span class="muted small">~${day.minutes} min</span></div><div class="row" style="align-items:flex-start;gap:8px"><div class="chips grow">${day.slots.map(x => `<span class="chip ${x.focus ? 'hot' : ''}">${esc(SLOTS[x.slot].label)} · ${x.sets}×${x.reps}</span>`).join('')}</div>${miniBody([].concat(...day.slots.map(x => SLOT_KEYS[x.slot] || [])), 96)}</div></div>`).join('') +
       `<div class="sec">Hard sets per muscle per week</div><div class="chips">${Object.entries(ws).map(([m, n]) => `<span class="chip">${MUSCLE_NAMES[m]} ${n}</span>`).join('')}</div>
       <p class="muted small">Low volume on purpose: every one of these sets is to failure or 1 rep short. Next you pick a movement for each slot. Not sure? ★ is the pick.</p>
       <button class="ghost wide" data-ob="auto">Pick everything for me</button>`;
@@ -387,7 +389,7 @@ function drawOB(){
     const slot = SLOTS[it.x.slot];
     const nth = list.filter(o => o.di === it.di && o.si < it.si && SLOTS[o.x.slot].m === slot.m).length;
     h += `<div class="muted small">${esc(it.day.name)} · ${OB.pickIdx + 1} of ${list.length}</div>
-      <h1>${esc(slot.label)}</h1>
+      <div class="row" style="align-items:center;gap:10px"><h1 class="grow">${esc(slot.label)}</h1>${miniBody(SLOT_KEYS[it.x.slot], 110)}</div>
       <p class="muted">${it.x.sets} × ${it.x.reps} reps, ${it.x.effort}. Pick whatever hits it best for you.</p>
       ${sameDay.length ? `<div class="muted small" style="margin:-6px 0 10px">Already in ${esc(it.day.name)}: ${sameDay.map(esc).join(', ')}</div>` : ''}` +
       opts.map((o, i) => `<button class="ob-opt ${cur === o[0] ? 'on' : ''}" data-pick="${esc(o[0])}"><b>${i === 0 ? '★ ' : ''}${esc(o[0])}</b><span>${i === 0 ? 'Recommended' + (o[2] ? ' · ' + esc(o[2]) : '') : esc(o[2] || '')}</span></button>`).join('') +

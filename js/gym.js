@@ -175,7 +175,7 @@ function viewActive(){
   if (!a.exercises.length) h += `<div class="empty">Add your first exercise to get going.</div>`;
   a.exercises.forEach((e, i) => {
     const prev = lastSetsFor(e.exId) || [];
-    h += `<div class="card"><div class="ex-title"><b class="grow">${esc(exName(e.exId))}</b><button class="icon" data-act="swap-ex" data-i="${i}" aria-label="Swap exercise">⇄</button><button class="icon" data-act="rm-ex" data-i="${i}" aria-label="Remove exercise">✕</button></div>
+    h += `<div class="card"><div class="ex-title">${miniBody(exerciseKeys(exName(e.exId)), 70, null, true)}<b class="grow" style="margin-left:8px">${esc(exName(e.exId))}</b><button class="icon" data-act="swap-ex" data-i="${i}" aria-label="Swap exercise">⇄</button><button class="icon" data-act="rm-ex" data-i="${i}" aria-label="Remove exercise">✕</button></div>
       ${i === 0 ? `<div class="coach">🔥 Warm up first: 2–3 lighter ramp-up sets. Don't log them, they don't count.</div>` : ''}
       ${e.reps ? `<div class="muted small" style="margin:-4px 0 4px">${e.sets.length} × ${esc(e.reps)} reps${e.effort ? ' · ' + esc(e.effort) : ''}${e.rest ? ' · rest ' + Math.round(e.rest / 60 * 2) / 2 + ' min' : ''}</div>` : ''}
       ${overloadHint(e)}

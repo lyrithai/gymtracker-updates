@@ -80,8 +80,9 @@ const BODY_FRONT = {
   _skin: ['M100,9 C111,9 117,19 117,31 C117,43 110,51 100,51 Z', 'M91,49 L100,49 L100,62 L89,62 Z', 'M56,190 C51,192 50,202 53,208 C57,212 62,210 63,204 C64,198 62,191 56,190 Z',
           'M80,168 C88,176 96,180 100,182 L100,198 L80,198 C78,188 78,178 80,168 Z', 'M83,287 C80,292 81,300 85,303 L95,303 C98,299 98,291 95,287 Z', 'M84,375 L96,375 L99,389 L77,389 Z'],
   traps: ['M89,56 L75,66 L90,64 Z'],
-  shoulders: ['M88,64 C74,62 61,67 56,80 C54,88 55,94 58,98 C64,94 70,88 74,80 C78,74 84,70 88,66 Z'],
-  chest: ['M99,67 L88,66 C80,72 74,80 72,92 C72,100 76,106 84,108 C92,110 98,106 99,102 Z'],
+  deltF: ['M88,64 C74,62 61,67 56,80 C54,88 55,94 58,98 C64,94 70,88 74,80 C78,74 84,70 88,66 Z'],
+  chestU: ['M99,67 L88,66 C80,72 75,79 73,87 L99,87 Z'],
+  chestL: ['M99,87 L73,87 C72,90 72,96 72,98 C72,103 76,106 84,108 C92,110 98,106 99,102 Z'],
   biceps: ['M57,100 C53,110 52,124 55,136 C59,140 65,140 68,136 C70,124 70,110 68,98 C64,96 60,97 57,100 Z'],
   forearms: ['M54,140 C50,156 49,172 51,188 C55,190 59,190 62,188 C66,172 68,156 67,140 C63,142 58,142 54,140 Z'],
   abs: ['M99,110 L89,112 C87,128 87,146 89,166 C93,170 96,172 99,172 Z', 'M87,112 C81,110 77,108 75,106 C74,124 76,144 80,160 C82,166 85,169 87,169 C85,150 85,130 87,112 Z'],
@@ -91,7 +92,7 @@ const BODY_FRONT = {
 const BODY_BACK = {
   _skin: BODY_FRONT._skin.slice(0, 4).concat(['M83,289 C80,293 81,299 85,301 L95,301 C98,298 98,292 95,289 Z', 'M84,375 L96,375 L99,389 L77,389 Z']),
   traps: ['M100,50 L91,53 C86,58 80,62 73,66 C83,70 93,78 100,98 Z'],
-  shoulders: ['M73,66 C63,68 57,76 55,88 C56,94 58,98 60,98 C64,90 70,82 78,74 Z'],
+  deltR: ['M73,66 C63,68 57,76 55,88 C56,94 58,98 60,98 C64,90 70,82 78,74 Z'],
   upperback: ['M100,98 C94,86 86,76 79,74 C75,82 75,92 79,101 C86,105 94,108 100,110 Z'],
   lats: ['M78,103 C74,97 72,90 72,84 C68,92 66,104 68,118 C72,136 80,150 90,160 L100,164 L100,111 C94,109 86,107 78,103 Z'],
   triceps: ['M57,100 C53,110 52,124 55,136 C59,140 65,140 68,136 C70,124 70,110 68,98 C64,96 60,97 57,100 Z'],
@@ -101,13 +102,17 @@ const BODY_BACK = {
   hamstrings: ['M77,223 C74,239 74,256 77,272 C79,280 82,285 85,287 L96,287 C98,272 99,254 99,236 C99,231 98,227 96,227 C88,229 81,227 77,223 Z'],
   calves: ['M81,303 C76,313 75,328 78,342 C80,356 84,367 87,373 L95,373 C97,360 98,342 97,322 C96,312 94,306 92,303 Z']
 };
-function bodySvg(parts, R){
-  let s = '<svg viewBox="40 0 120 395" class="body">';
+const RANK_KEY = {chestU:'chest', chestL:'chest', deltF:'shoulders', deltR:'shoulders'};
+const rankKey = k => RANK_KEY[k] || k;
+/** fill(k) gives each region's colour; clickable regions open the rank sheet */
+function bodySvg(parts, fill, clickable, vb){
+  if (typeof fill !== 'function') { const R = fill; fill = k => rankColor(R[rankKey(k)] ? R[rankKey(k)].tier : -1); clickable = true; }
+  let s = '<svg viewBox="' + (vb || '40 0 120 395') + '" class="body">';
   for (const [k, paths] of Object.entries(parts)) {
-    const fill = k === '_skin' ? '#1d2129' : rankColor(R[k] ? R[k].tier : -1);
+    const col = k === '_skin' ? '#1d2129' : fill(k);
     paths.forEach(d => {
-      const attrs = k === '_skin' ? '' : ` data-act="muscle" data-m="${k}"`;
-      s += `<path d="${d}" fill="${fill}"${attrs}/><path d="${d}" fill="${fill}" transform="translate(200,0) scale(-1,1)"${attrs}/>`;
+      const attrs = k === '_skin' || !clickable ? '' : ` data-act="muscle" data-m="${rankKey(k)}"`;
+      s += `<path d="${d}" fill="${col}"${attrs}/><path d="${d}" fill="${col}" transform="translate(200,0) scale(-1,1)"${attrs}/>`;
     });
   }
   return s + '</svg>';
@@ -150,3 +155,32 @@ function openMuscle(m){
   });
 }
 ACTIONS.muscle = b => openMuscle(b.dataset.m);
+
+/* ---------- mini diagrams: light up what a day / slot / exercise trains ---------- */
+const SLOT_KEYS = {chestIncline:['chestU'], chestPress:['chestU','chestL'], chestFly:['chestL'], vPull:['lats'], latIso:['lats'], hRow:['upperback'], traps:['traps'],
+  ohp:['deltF'], sideDelt:['deltF','deltR'], rearDelt:['deltR'], triOH:['triceps'], triPush:['triceps'], biLong:['biceps'], biHammer:['forearms'],
+  squat:['quads','glutes'], legPress:['quads','glutes'], quadIso:['quads'], hinge:['hamstrings','glutes','lowerback'], hamCurl:['hamstrings'], glute:['glutes'], calves:['calves'], abs:['abs']};
+const MUSCLE_KEYS = {chest:['chestU','chestL'], back:['lats','upperback','lowerback'], shoulders:['deltF','deltR'], biceps:['biceps'], triceps:['triceps'], forearms:['forearms'],
+  traps:['traps'], quads:['quads'], hamstrings:['hamstrings'], glutes:['glutes'], calves:['calves'], abs:['abs']};
+const POOL_KEYS = {upperChest:['chestU'], midChest:['chestU','chestL'], lowerChest:['chestL'], lats:['lats'], upperback:['upperback'], traps:['traps'], frontDelt:['deltF'],
+  sideDelt:['deltF','deltR'], rearDelt:['deltR'], triOverhead:['triceps'], triNormal:['triceps'], biceps:['biceps'], forearms:['forearms'], quads:['quads'],
+  hamstrings:['hamstrings'], glutes:['glutes'], calves:['calves'], abs:['abs']};
+/** keys: regions to light up. second: regions to light up softly (e.g. indirectly worked). */
+const FRONT_ONLY = ['chestU','chestL','deltF','biceps','abs','quads'], BACK_ONLY = ['deltR','upperback','lats','triceps','lowerback','glutes','hamstrings'];
+/** auto: only draw the side(s) of the body that are working (for small spaces) */
+function miniBody(keys, h, second, auto){
+  const on_ = new Set(keys || []), soft = new Set(second || []);
+  const fill = k => on_.has(k) ? 'var(--accent)' : soft.has(k) ? 'rgba(163,230,53,.35)' : '#2b303b';
+  let front = true, back = true;
+  if (auto && on_.size) { front = [...on_].some(k => !BACK_ONLY.includes(k)); back = [...on_].some(k => !FRONT_ONLY.includes(k)); if (!front && !back) front = back = true; }
+  // auto: zoom to the upper or lower half when that's all that works
+  const LOW = ['quads','hamstrings','glutes','calves','lowerback'];
+  let vb = null;
+  if (auto && on_.size) { const ks = [...on_]; if (ks.every(k => !LOW.includes(k))) vb = '40 4 120 200'; else if (ks.every(k => LOW.includes(k))) vb = '40 150 120 240'; }
+  return `<div class="mini-body" style="height:${h || 120}px">${front ? bodySvg(BODY_FRONT, fill, false, vb) : ''}${back ? bodySvg(BODY_BACK, fill, false, vb) : ''}</div>`;
+}
+function exerciseKeys(name){
+  const k = new Set();
+  Object.entries(POOLS).forEach(([p, list]) => { if (list.some(o => o[0] === name)) (POOL_KEYS[p] || []).forEach(x => k.add(x)); });
+  return [...k];
+}
