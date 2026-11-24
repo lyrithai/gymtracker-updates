@@ -201,6 +201,8 @@ canvas{width:100%;height:200px;display:block}
 .cal-day.on{border-color:var(--accent)}
 .mchip{border:0;min-height:36px;padding:0 12px;font-size:13px;font-weight:600}
 
+.sheet-x{position:absolute;right:8px;top:4px;z-index:3}
+.sheet h2{padding-right:40px}
 /* mini body diagrams */
 .mini-body{display:flex;gap:1px;flex:none}
 .mini-body svg{height:100%;width:auto;display:block}

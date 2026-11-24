@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gym Tracker">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#0f1115">
+<meta name="robots" content="noindex">
+<title>Gym Tracker</title>
+<link rel="manifest" href="app.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+html,body{margin:0;background:#0f1115}
+/* keep clear of the iPhone home bar */
+nav#nav{padding-bottom:env(safe-area-inset-bottom)}
+body{padding-bottom:calc(84px + env(safe-area-inset-bottom))!important}
+#rest,#upd{bottom:calc(76px + env(safe-area-inset-bottom))!important}
+#toast{bottom:calc(96px + env(safe-area-inset-bottom))!important}
+.sheet{padding-bottom:calc(24px + env(safe-area-inset-bottom))!important}
+.ob-foot{padding-bottom:calc(18px + env(safe-area-inset-bottom))!important}
+</style>
+</head>
+<body>
+<script>window.WEB_VERSION = 14; window.ASSET_BASE = '';</script>
+<script src="js/boot.js"></script>
+<script>
+(function(){
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){});
+  if (!('serviceWorker' in navigator)) return;
+  var had = !!navigator.serviceWorker.controller, going = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function(){ if (had && !going) { going = true; location.reload(); } had = true; });
+  navigator.serviceWorker.register('sw.js', {updateViaCache:'none'}).then(function(reg){
+    function offer(w){ if (w && navigator.serviceWorker.controller && window.onUpdateReady) window.onUpdateReady('', null, function(){ w.postMessage('go'); }); }
+    function watch(w){ if (w) w.addEventListener('statechange', function(){ if (w.state === 'installed') offer(w); }); }
+    setTimeout(function(){ offer(reg.waiting); }, 1500);
+    watch(reg.installing);
+    reg.addEventListener('updatefound', function(){ watch(reg.installing); });
+    document.addEventListener('visibilitychange', function(){ if (!document.hidden) reg.update().catch(function(){}); });
+  }).catch(function(){});
+})();
+</script>
+</body>
+</html>

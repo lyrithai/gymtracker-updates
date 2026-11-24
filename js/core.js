@@ -95,7 +95,8 @@ function openSheet(build, opts){
   el.innerHTML = '<div class="sheet-bg"></div><div class="sheet' + (opts.full ? ' full' : '') + '"></div>';
   document.body.appendChild(el);
   const s = {el, body: el.querySelector('.sheet')};
-  s.refresh = () => { const y = s.body.scrollTop; s.body.innerHTML = '<div class="grab"></div>'; build(s.body, s); s.body.scrollTop = y; };
+  s.refresh = () => { const y = s.body.scrollTop; s.body.innerHTML = '<div class="grab"></div>' + (window.WEB_VERSION ? '<button class="icon sheet-x" aria-label="Close">✕</button>' : ''); build(s.body, s); s.body.scrollTop = y;
+    const x = s.body.querySelector('.sheet-x'); if (x) x.onclick = () => closeSheet(); };
   el.querySelector('.sheet-bg').onclick = () => closeSheet();
   sheets.push(s); s.refresh();
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('open')));
@@ -232,7 +233,9 @@ ACTIONS.settings = () => openSheet((b, sh) => {
   on(b, '#bcopy', () => {
     const ta = document.createElement('textarea'); ta.value = JSON.stringify(S); document.body.appendChild(ta);
     ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch(e) {}
-    ta.remove(); toast(ok ? 'Backup copied. Paste it somewhere safe.' : 'Could not copy');
+    ta.remove();
+    const done = k => toast(k ? 'Backup copied. Paste it somewhere safe.' : 'Could not copy');
+    if (window.WEB_VERSION && navigator.clipboard) navigator.clipboard.writeText(JSON.stringify(S)).then(() => done(true), () => done(ok)); else done(ok);
   });
   on(b, '#brestore', () => {
     let d; try { d = JSON.parse(b.querySelector('#bin').value); } catch(e) {}

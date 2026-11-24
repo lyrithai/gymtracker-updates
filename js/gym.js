@@ -162,10 +162,17 @@ function overloadHint(e){
 }
 
 /* ---------- rest timer (starts when you tick a set) ---------- */
-let restT = null;
+let restT = null, beepCtx = null;
+// iPhones can't vibrate from a web app, so they get a sound (unlocked by the tap that starts the timer)
+function beepReady(){ if (navigator.vibrate) return; try { beepCtx = beepCtx || new (window.AudioContext || window.webkitAudioContext)(); beepCtx.resume(); } catch(e) {} }
+function beep(){
+  if (!beepCtx) return;
+  try { [0, 0.25, 0.5].forEach(t => { const o = beepCtx.createOscillator(), v = beepCtx.createGain(), at = beepCtx.currentTime + t;
+    o.frequency.value = 880; v.gain.setValueAtTime(0.3, at); v.gain.exponentialRampToValueAtTime(0.001, at + 0.2); o.connect(v); v.connect(beepCtx.destination); o.start(at); o.stop(at + 0.2); }); } catch(e) {}
+}
 function startRest(sec){
   if (!sec) return;
-  stopRest();
+  stopRest(); beepReady();
   const bar = document.createElement('div');
   bar.id = 'rest';
   bar.innerHTML = '<span class="grow"><b id="restT"></b><div class="muted tiny">Rest. Next set to failure.</div></span><button class="secondary" data-r="30">+30s</button><button class="primary" data-r="skip">Go</button>';
@@ -176,7 +183,7 @@ function startRest(sec){
   const tick = () => {
     const left = Math.max(0, Math.round((end - Date.now()) / 1000));
     const t = document.getElementById('restT'); if (t) t.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
-    if (left <= 0) { try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch(e) {} bar.classList.add('done'); const tt = document.getElementById('restT'); if (tt) tt.textContent = 'Go'; clearInterval(restT); restT = null; setTimeout(() => { if (!restT) stopRest(); }, 4000); }
+    if (left <= 0) { try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch(e) {} beep(); bar.classList.add('done'); const tt = document.getElementById('restT'); if (tt) tt.textContent = 'Go'; clearInterval(restT); restT = null; setTimeout(() => { if (!restT) stopRest(); }, 4000); }
   };
   tick(); restT = setInterval(tick, 500);
 }
