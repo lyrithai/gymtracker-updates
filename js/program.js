@@ -149,8 +149,8 @@ const CM_GROUPS = [
   ['Back', [['lats','Lats'],['upperback','Upper back'],['traps','Traps'],['lowerback','Lower back']]],
   ['Shoulders', [['frontDelt','Front delts'],['sideDelt','Side delts'],['rearDelt','Rear delts']]],
   ['Arms', [['biceps','Biceps'],['triceps','Triceps'],['brachio','Brachioradialis'],['flexors','Forearm flexors'],['extensors','Forearm extensors']]],
-  ['Legs', [['quads','Quads'],['hamstrings','Hamstrings'],['glutes','Glutes'],['adductors','Adductors'],['abductors','Abductors'],['calves','Calves'],['tibialis','Tibialis']]],
-  ['Core & neck', [['abs','Abs'],['obliques','Obliques'],['neck','Neck']]]
+  ['Legs', [['quads','Quads'],['hamstrings','Hamstrings'],['glutes','Glutes'],['adductors','Adductors'],['calves','Calves']]],
+  ['Core', [['abs','Abs'],['obliques','Obliques']]]
 ];
 const CUSTOM_MUSCLES = [].concat(...CM_GROUPS.map(g => g[1]));
 const CM_LABEL = Object.fromEntries(CUSTOM_MUSCLES);
@@ -166,7 +166,7 @@ const DAY_TEMPLATES = [
   ['Pull',['lats','upperback','traps','rearDelt','biceps','brachio']],
   ['Legs',['quads','hamstrings','glutes','adductors','calves','abs']],
   ['Upper',['upperChest','lowerChest','lats','upperback','traps','sideDelt','rearDelt','biceps','triceps']],
-  ['Lower',['quads','hamstrings','glutes','adductors','abductors','calves','tibialis']],
+  ['Lower',['quads','hamstrings','glutes','adductors','calves','abs']],
   ['Full Body',['upperChest','lats','upperback','sideDelt','biceps','triceps','quads','hamstrings']],
   ['Anterior',['upperChest','lowerChest','sideDelt','biceps','triceps','quads','adductors','abs']],
   ['Posterior',['lats','upperback','traps','rearDelt','lowerback','brachio','hamstrings','glutes','calves']],
@@ -180,7 +180,7 @@ const OLD_KEYS = {chest:['upperChest','lowerChest'], back:['lats','upperback'], 
 function normWeek(week){
   return (week || DEFAULT_WEEK).map(ms => { const out = []; ms.forEach(m => (OLD_KEYS[m] || [m]).forEach(k => { if (CM_LABEL[k] && !out.includes(k)) out.push(k); })); return out; });
 }
-const UPPER_M = CM_GROUPS.slice(0, 4).flatMap(g => g[1].map(x => x[0])).concat(['neck']);
+const UPPER_M = CM_GROUPS.slice(0, 4).flatMap(g => g[1].map(x => x[0]));
 function dayName(ms){
   if (!ms.length) return 'Rest';
   const t = DAY_TEMPLATES.find(([, l]) => l.length === ms.length && l.every(m => ms.includes(m)));
@@ -190,7 +190,7 @@ function dayName(ms){
   return regions.length <= 3 ? regions.join(' & ').replace(/ & (?=.* & )/g, ', ') : regions.slice(0, 2).join(', ') + ' +' + (regions.length - 2);
 }
 const SHORT = {'Full Body':'Full', Anterior:'Ant.', Posterior:'Post.', 'Chest & Back':'Ch·Bk', 'Shoulders & Arms':'Sh·Ar'};
-const REGION_SHORT = {Chest:'Ch', Back:'Bk', Shoulders:'Sh', Arms:'Ar', Legs:'Lg', 'Core & neck':'Co'};
+const REGION_SHORT = {Chest:'Ch', Back:'Bk', Shoulders:'Sh', Arms:'Ar', Legs:'Lg', Core:'Co'};
 /** short label for the 7-day strip */
 function dayShort(ms){
   const n = dayName(ms);
@@ -202,7 +202,7 @@ function customDays(week){
   normWeek(week).forEach((ms, wd) => {
     if (!ms.length) return;
     const legsOnly = ms.every(m => !UPPER_M.includes(m));
-    const order = legsOnly ? ['calves','tibialis','quads','adductors','abductors','hamstrings','glutes','abs','obliques'] : CUSTOM_MUSCLES.map(([k]) => k);
+    const order = legsOnly ? ['calves','quads','adductors','hamstrings','glutes','abs','obliques'] : CUSTOM_MUSCLES.map(([k]) => k);
     let slots = [];
     order.filter(m => ms.includes(m)).forEach(m => slots = slots.concat(MUSCLE_SLOTS[m] || []));
     // few parts in the day = room for a 2nd movement on each (bro-split style)
