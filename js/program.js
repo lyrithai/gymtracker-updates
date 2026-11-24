@@ -13,10 +13,10 @@
 const POOLS = {
   upperChest: [['Smith Machine Incline Press','m','Stable and easy to progress'],['TNF Press','d','Reverse-grip incline press: elbows tucked, easy on the shoulders'],['Low-to-High Cable Fly','m','Upper chest fly, no pressing needed'],
     ['Low-Incline Dumbbell Press','d','Big stretch'],['Incline Dumbbell Fly','d','Huge stretch'],['Incline Dumbbell Press','d',''],['Incline Bench Press','b',''],['Deficit Push-up','w','']],
-  midChest: [['Machine Chest Press','m','Stable, so you can go to true failure safely'],['Pec Deck','m','Constant tension, triceps out of it'],['Dumbbell Bench Press','d','Deep stretch at the bottom'],
-    ['Hammer Strength Chest Press','m',''],['Cable Crossover','m',''],['Single-Arm Cable Fly','m',''],['Bench Press','b','Best for raw pressing strength'],['Push-up','w','No kit needed']],
-  lowerChest: [['Pec Deck','m','Constant tension, triceps out of it'],['High-to-Low Cable Fly','m','Lower chest fly'],['Chest Dips','w','Lean forward for lower chest'],['Cable Crossover','m',''],
-    ['Decline Bench Press','b',''],['Weighted Dips','w',''],['Dumbbell Bench Press','d','']],  lats: [['Lat Pulldown','m','Easy to load; same end point every rep'],['Keenan Flaps','m','Cuff at the elbow: lats do all the work, biceps out'],['Cable Pullover','m','Lats through a full stretch'],
+  midChest: [['Pec Deck','m','Constant tension, triceps out of it'],['Machine Chest Press','m','Stable, so you can go to true failure safely'],['Dumbbell Bench Press','d','Deep stretch at the bottom'],
+    ['Hammer Strength Chest Press','m',''],['High-to-Low Cable Fly','m','Leans towards the lower chest'],['Cable Crossover','m',''],['Single-Arm Cable Fly','m',''],['Chest Dips','w','Lean forward'],
+    ['Bench Press','b','Best for raw pressing strength'],['Decline Bench Press','b',''],['Weighted Dips','w',''],['Push-up','w','No kit needed']],
+  lats: [['Lat Pulldown','m','Easy to load; same end point every rep'],['Keenan Flaps','m','Cuff at the elbow: lats do all the work, biceps out'],['Cable Pullover','m','Lats through a full stretch'],
     ['Single-Arm Lat Pulldown','m','Big stretch per side'],['Neutral-Grip Pulldown','m',''],['Kneeling Single-Arm Pulldown','m',''],['Straight-Arm Pulldown','m',''],
     ['Pull-up','w','The bodyweight classic'],['Chin-up','w',''],['Dumbbell Pullover','d','']],
   upperback: [['Chest-Supported T-Bar Row','m','No lower back, no cheating'],['Single-Arm Cable Row','m',''],['Seated Cable Row','m',''],['Machine Row','m',''],
@@ -51,8 +51,8 @@ const POOLS = {
 // Slots = a muscle job in a day. pool = what you can pick from; prefer = the ★ default order.
 const SLOTS = {
   chestIncline:{m:'chest', pool:'upperChest', label:'Upper chest', big:1, prefer:['Smith Machine Incline Press','TNF Press','Low-Incline Dumbbell Press']},
-  chestPress:  {m:'chest', pool:'midChest', label:'Mid chest', big:1, prefer:['Machine Chest Press','Dumbbell Bench Press']},
-  chestFly:    {m:'chest', pool:'lowerChest', label:'Lower chest', prefer:['Pec Deck','High-to-Low Cable Fly','Chest Dips']},
+  chestPress:  {m:'chest', pool:'midChest', label:'Mid & lower chest', big:1, prefer:['Machine Chest Press','Dumbbell Bench Press']},
+  chestFly:    {m:'chest', pool:'midChest', label:'Mid & lower chest', prefer:['Pec Deck','High-to-Low Cable Fly','Chest Dips']},
   vPull:       {m:'lats', pool:'lats', label:'Lats (width)', big:1, prefer:['Lat Pulldown','Pull-up']},
   latIso:      {m:'lats', pool:'lats', label:'Lats (full stretch)', prefer:['Keenan Flaps','Cable Pullover','Dumbbell Pullover']},
   hRow:        {m:'upperback', pool:'upperback', label:'Upper back (thickness)', big:1, prefer:['Chest-Supported T-Bar Row','Dumbbell Row']},
@@ -119,23 +119,43 @@ const FOCUS = [['chest','Chest'],['back','Back'],['shoulders','Shoulders'],['arm
 const FOCUS_OF = {forearms:['arms'], adductors:['legs'], tibialis:['legs'], lowerback:['back'], neck:[], chest:['chest'], lats:['back'], upperback:['back'], traps:['back'], shoulders:['shoulders'], biceps:['arms'], triceps:['arms'], quads:['legs'], hamstrings:['legs','glutes'], glutes:['glutes'], calves:['legs'], abs:[]};
 const EQUIP = {full:['m','b','d','w'], basic:['b','d','w'], home:['d','w']};
 
-/** Options for a slot: its muscle's whole pool (equipment-filtered), ★ preferred moves first, minus names in 'exclude'. */
+/** A muscle's movements: the built-in list plus your own exercises for it. */
+function poolOf(key){
+  const mine = (S.exercises || []).filter(e => !e.hidden && (e.pools || []).includes(key)).map(e => [e.name, '*', 'Your exercise']);
+  return POOLS[key].concat(mine.filter(o => !POOLS[key].some(p => p[0] === o[0])));
+}
+/** Options for a slot (equipment-filtered; your own are always offered), preferred first, minus 'exclude'. */
 function slotOptions(key, equip, exclude){
-  const ok = EQUIP[equip] || EQUIP.full, sl = SLOTS[key], pool = POOLS[sl.pool].filter(o => ok.includes(o[1]));
+  const ok = EQUIP[equip] || EQUIP.full, sl = SLOTS[key], pool = poolOf(sl.pool).filter(o => o[1] === '*' || ok.includes(o[1]));
   const rank = o => { const i = sl.prefer.indexOf(o[0]); return i < 0 ? 99 + pool.indexOf(o) : i; };
   return pool.slice().sort((a, b) => rank(a) - rank(b)).filter(o => !(exclude || []).includes(o[0]));
 }
-/** Resolve the movement for every slot: your pick, else the first ★ option not already used that day. */
+/** One pick per slot, shared by every day that has it. key = slot + which one it is that day (2 curls = #0, #1). */
+function planKeys(plan){
+  return plan.map(day => { const n = {}; return day.slots.map(x => { n[x.slot] = (n[x.slot] || 0) + 1; return x.slot + '#' + (n[x.slot] - 1); }); });
+}
+/** Movement for every 'day:slot': your pick for that key, else the first preferred one not used in any day the key shares. */
 function resolvePicks(plan, picks, equip){
-  const out = {};
-  plan.forEach((day, di) => {
-    const used = [];
-    day.slots.forEach((x, si) => { const id = di + ':' + si; if (picks[id]) used.push(picks[id]); });
-    day.slots.forEach((x, si) => {
-      const id = di + ':' + si;
-      if (picks[id]) { out[id] = picks[id]; return; }
-      const o = slotOptions(x.slot, equip, used)[0] || slotOptions(x.slot, equip)[0];
-      out[id] = o[0]; used.push(o[0]);
+  const keys = planKeys(plan), order = [...new Set([].concat(...keys))], names = {}, out = {};
+  const clash = k => { const u = []; keys.forEach(d => { if (d.includes(k)) d.forEach(o => { if (o !== k && names[o]) u.push(names[o]); }); }); return u; };
+  const opts = (k, ex) => slotOptions(k.split('#')[0], equip, ex);
+  order.forEach(k => { if (picks[k] && opts(k, clash(k)).some(o => o[0] === picks[k])) names[k] = picks[k]; });
+  order.forEach(k => { if (!names[k]) names[k] = (opts(k, clash(k))[0] || opts(k)[0])[0]; });
+  keys.forEach((d, di) => d.forEach((k, si) => { out[di + ':' + si] = names[k]; }));
+  return out;
+}
+/** Plans made before picks were remembered: work out what you chose from the routines. */
+function inferPicks(){
+  const out = {}, ids = S.program ? S.program.ids : [];
+  S.routines.filter(r => ids.includes(r.id)).forEach(r => {
+    const seen = {};
+    r.items.forEach(it => {
+      const name = exName(it.exId);
+      const sl = it.slot || Object.keys(SLOTS).filter(k => poolOf(SLOTS[k].pool).some(o => o[0] === name))
+        .sort((a, b) => (SLOTS[b].prefer.includes(name) - SLOTS[a].prefer.includes(name)) || ((seen[a] || 0) - (seen[b] || 0)) || ((a === 'chestPress') - (b === 'chestPress')))[0];
+      if (!sl) return;
+      const k = sl + '#' + (seen[sl] || 0); seen[sl] = (seen[sl] || 0) + 1;
+      if (!out[k]) out[k] = name;
     });
   });
   return out;
@@ -145,7 +165,7 @@ const WEEKDAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const WEEKDAY_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 // every trainable part, grouped by region (the order also sets the order in a session)
 const CM_GROUPS = [
-  ['Chest', [['upperChest','Upper chest'],['midChest','Mid chest'],['lowerChest','Lower chest']]],
+  ['Chest', [['upperChest','Upper chest'],['midChest','Mid & lower chest']]],
   ['Back', [['lats','Lats'],['upperback','Upper back'],['traps','Traps'],['lowerback','Lower back']]],
   ['Shoulders', [['frontDelt','Front delts'],['sideDelt','Side delts'],['rearDelt','Rear delts']]],
   ['Arms', [['biceps','Biceps'],['triceps','Triceps'],['brachio','Brachioradialis'],['flexors','Forearm flexors'],['extensors','Forearm extensors']]],
@@ -155,28 +175,28 @@ const CM_GROUPS = [
 const CUSTOM_MUSCLES = [].concat(...CM_GROUPS.map(g => g[1]));
 const CM_LABEL = Object.fromEntries(CUSTOM_MUSCLES);
 const CM_REGION = {}; CM_GROUPS.forEach(([r, l]) => l.forEach(([k]) => CM_REGION[k] = r));
-const MUSCLE_SLOTS = {upperChest:[['chestIncline',1]], midChest:[['chestPress',1]], lowerChest:[['chestFly',1]],
+const MUSCLE_SLOTS = {upperChest:[['chestIncline',1]], midChest:[['chestFly',1]],
   lats:[['vPull',1],['latIso',2]], upperback:[['hRow',1]], traps:[['traps',1]], lowerback:[['lowerBack',1]],
   frontDelt:[['ohp',1]], sideDelt:[['sideDelt',1]], rearDelt:[['rearDelt',1]],
   biceps:[['biLong',1]], triceps:[['triOH',1],['triPush',1]], brachio:[['biHammer',1]], flexors:[['flexors',1]], extensors:[['extensors',1]],
   quads:[['quadIso',1],['squat',1],['legPress',2]], hamstrings:[['hamCurl',1],['hinge',1]], glutes:[['glute',1]], adductors:[['adductors',1]], abductors:[['abductors',1]],
   calves:[['calves',1]], tibialis:[['tibialis',1]], abs:[['abs',1]], obliques:[['obliques',1]], neck:[['neck',1]]};
 const DAY_TEMPLATES = [
-  ['Push',['upperChest','lowerChest','sideDelt','triceps']],
+  ['Push',['upperChest','midChest','sideDelt','triceps']],
   ['Pull',['lats','upperback','traps','rearDelt','biceps','brachio']],
   ['Legs',['quads','hamstrings','glutes','adductors','calves','abs']],
-  ['Upper',['upperChest','lowerChest','lats','upperback','traps','sideDelt','rearDelt','biceps','triceps']],
-  ['Lower',['quads','hamstrings','glutes','adductors','calves','abs']],
+  ['Upper',['upperChest','midChest','lats','upperback','traps','sideDelt','rearDelt','biceps','triceps']],
+  ['Lower',['quads','hamstrings','glutes','adductors','calves']],
   ['Full Body',['upperChest','lats','upperback','sideDelt','biceps','triceps','quads','hamstrings']],
-  ['Anterior',['upperChest','lowerChest','sideDelt','biceps','triceps','quads','adductors','abs']],
+  ['Anterior',['upperChest','midChest','sideDelt','biceps','triceps','quads','adductors','abs']],
   ['Posterior',['lats','upperback','traps','rearDelt','lowerback','brachio','hamstrings','glutes','calves']],
   ['Arms',['biceps','triceps','brachio','flexors','extensors']],
-  ['Chest & Back',['upperChest','midChest','lowerChest','lats','upperback']],
+  ['Chest & Back',['upperChest','midChest','lats','upperback']],
   ['Shoulders & Arms',['frontDelt','sideDelt','rearDelt','biceps','triceps']]];
 const TPL = n => DAY_TEMPLATES.find(t => t[0] === n)[1].slice();
 const DEFAULT_WEEK = [TPL('Push'), TPL('Pull'), TPL('Legs'), [], TPL('Upper'), TPL('Lower'), []];
 // weeks saved before the sub-muscle update used whole regions: convert them
-const OLD_KEYS = {chest:['upperChest','lowerChest'], back:['lats','upperback'], shoulders:['sideDelt','rearDelt'], forearms:['brachio']};
+const OLD_KEYS = {lowerChest:['midChest'], chest:['upperChest','midChest'], back:['lats','upperback'], shoulders:['sideDelt','rearDelt'], forearms:['brachio']};
 function normWeek(week){
   return (week || DEFAULT_WEEK).map(ms => { const out = []; ms.forEach(m => (OLD_KEYS[m] || [m]).forEach(k => { if (CM_LABEL[k] && !out.includes(k)) out.push(k); })); return out; });
 }
@@ -207,6 +227,7 @@ function customDays(week){
     order.filter(m => ms.includes(m)).forEach(m => slots = slots.concat(MUSCLE_SLOTS[m] || []));
     // few parts in the day = room for a 2nd movement on each (bro-split style)
     if (ms.length <= 4) {
+      if (ms.includes('midChest') && ms.length <= 2) slots.push(['chestPress', 2]);
       if (ms.includes('biceps')) slots.push(['biLong', 2]);
       if (ms.includes('sideDelt')) slots.push(['sideDelt', 2]);
       if (ms.includes('upperback')) slots.push(['hRow', 2]);
@@ -303,14 +324,13 @@ function weeklySets(plan, u){
 }
 
 /* ---------- week coach: overlap, recovery and frequency tips (sub-muscle level) ---------- */
-const CHESTS = ['upperChest','midChest','lowerChest'];
+const CHESTS = ['upperChest','midChest'];
 // what training X also hits hard (warn when it's trained the very next day)
 const INDIRECT = {
   lats:      {biceps:'pulldowns already hammer your biceps', brachio:'every pull loads your brachioradialis', flexors:'your grip worked through every pull'},
   upperback: {biceps:'rows already work your biceps', rearDelt:'rows hit your rear delts hard', brachio:'rows load your brachioradialis'},
   upperChest:{triceps:'every press works your triceps', frontDelt:'incline pressing hits your front delts hard'},
   midChest:  {triceps:'every press works your triceps', frontDelt:'pressing hits your front delts'},
-  lowerChest:{triceps:'dips and presses work your triceps'},
   frontDelt: {triceps:'overhead pressing works your triceps'},
   traps:     {upperback:'shrugs and rows share the mid-back'},
   quads:     {glutes:'squats and leg press hit your glutes', adductors:'deep squats load your adductors'},
@@ -349,7 +369,6 @@ function analyzeWeek(weekIn){
     if ((has('lats') || has('upperback')) && has('biceps')) tips.push({t:'good', msg:`${D(i)}: back + biceps together is a good pairing. Biceps are already warm and they recover on the same days.`});
     if (chest.length && has('triceps')) tips.push({t:'good', msg:`${D(i)}: chest + triceps together works well, the pressing overlap lands on one day.`});
     if (chest.length && has('frontDelt')) tips.push({t:'tip', msg:`${D(i)}: chest pressing already hits your front delts hard, so direct front delt work the same day is usually wasted. Side and rear delts are the ones that need it.`});
-    if (chest.length >= 3) tips.push({t:'tip', msg:`${D(i)}: three chest movements in one session is a lot when every set goes to failure. Two is usually plenty.`});
     if (ms.length >= 10) tips.push({t:'tip', msg:`${D(i)} trains ${ms.length} parts: each gets 1–2 sets. Fine, just keep it short and hard.`});
   });
   const freq = g => week.filter(ms => ms.some(m => GROUP_OF(m) === g)).length;
@@ -372,7 +391,7 @@ let OB = null;
 const PLAN_VERSION = 6;
 function startOnboarding(fromSettings){
   const p = S.food.profile, u = S.user || {};
-  OB = {step:0, fromSettings:!!fromSettings, picks:{}, pickIdx:0,
+  OB = {step:0, fromSettings:!!fromSettings, picks:Object.assign({}, u.picks || inferPicks()), pickIdx:0,
     d:{name:u.name || '', goals:u.goals || [], sex:p.sex || 'm', age:p.age || 25, height:p.height || 178, weight:(S.body.weights.length ? S.body.weights[S.body.weights.length - 1].kg : p.weight) || 75,
        hUnit:u.hUnit || 'cm', wUnit:u.wUnit || 'kg', nGoal:p.goal || 'maintain', activity:p.activity || 1.55,
        exp:u.exp || 'intermediate', days:u.days || 4, split:u.split || '', style:u.style || 'hard2', reps:u.reps || 'heavy',
@@ -392,8 +411,11 @@ function obBack(){
 }
 function closeOB(){ const el = $('#ob'); if (el) el.remove(); OB = null; if (S.user) { S.user.skipVer = PLAN_VERSION; save(); } render(); }
 function pickList(){
-  const plan = buildPlan(OB.d), out = [];
-  plan.forEach((day, di) => day.slots.forEach((x, si) => out.push({di, si, day, x, id:di + ':' + si})));
+  const plan = buildPlan(OB.d), keys = planKeys(plan), out = [];
+  plan.forEach((day, di) => day.slots.forEach((x, si) => {
+    const id = keys[di][si], label = (day.weekday != null ? WEEKDAYS[day.weekday] + ' ' : '') + day.name, have = out.find(o => o.id === id);
+    if (have) { have.days.push(di); have.where.push(label); } else out.push({di, si, day, x, id, days:[di], where:[label]});
+  }));
   return out;
 }
 const lbToKg = lb => lb * 0.45359237;
@@ -481,18 +503,18 @@ function drawOB(){
     next = 'Pick my movements';
   } else if (step === 'pick') {
     const list = pickList(), it = list[OB.pickIdx];
-    const resolved = resolvePicks(buildPlan(d), OB.picks, d.equip);
-    // other movements already in this day (yours or the defaults) aren't offered again
-    const sameDay = list.filter(o => o.di === it.di && o.id !== it.id).map(o => resolved[o.id]);
-    const opts = slotOptions(it.x.slot, d.equip, sameDay), cur = OB.picks[it.id] || resolved[it.id];
+    const resolved = resolvePicks(buildPlan(d), OB.picks, d.equip), nameOf = o => resolved[o.di + ':' + o.si];
+    // movements already in a day this one is used on (yours or the defaults) aren't offered again
+    const sameDay = list.filter(o => o.id !== it.id && o.days.some(x => it.days.includes(x))).map(nameOf);
+    const cur = nameOf(it), opts = slotOptions(it.x.slot, d.equip, sameDay.filter(n => n !== cur));
     const slot = SLOTS[it.x.slot];
-    const nth = list.filter(o => o.di === it.di && o.si < it.si && SLOTS[o.x.slot].m === slot.m).length;
-    h += `<div class="muted small">${esc(it.day.name)} · ${OB.pickIdx + 1} of ${list.length}</div>
-      <div class="row" style="align-items:center;gap:10px"><h1 class="grow">${esc(slot.label)}</h1>${miniBody(SLOT_KEYS[it.x.slot], 110)}</div>
+    const nth = +it.id.split('#')[1];
+    h += `<div class="muted small">${OB.pickIdx + 1} of ${list.length} · ${esc(it.where.join(', '))}</div>
+      <div class="row" style="align-items:center;gap:10px"><h1 class="grow">${esc(slot.label)}${nth ? ' (' + (nth === 1 ? '2nd' : '3rd') + ')' : ''}</h1>${miniBody(SLOT_KEYS[it.x.slot], 110)}</div>
       <p class="muted">${it.x.sets} × ${it.x.reps} reps, ${it.x.effort}. Pick whatever hits it best for you.${slot.m === 'chest' ? ' Presses and flies both work: fly-only chest is fine if presses beat up your shoulders or triceps.' : ''}</p>
-      ${sameDay.length ? `<div class="muted small" style="margin:-6px 0 10px">Already in ${esc(it.day.name)}: ${sameDay.map(esc).join(', ')}</div>` : ''}` +
+      ${it.days.length > 1 ? `<div class="coach up">Pick once: used on all ${it.days.length} days.</div>` : ''}${sameDay.length ? `<div class="muted small" style="margin:-2px 0 10px">Already picked: ${[...new Set(sameDay)].map(esc).join(', ')}</div>` : ''}` +
       opts.map((o, i) => `<button class="ob-opt ${cur === o[0] ? 'on' : ''}" data-pick="${esc(o[0])}"><b>${i === 0 ? '★ ' : ''}${esc(o[0])}</b><span>${i === 0 ? 'Recommended' + (o[2] ? ' · ' + esc(o[2]) : '') : esc(o[2] || '')}</span></button>`).join('') +
-      `<button class="ghost wide" data-ob="auto">Use ★ for the rest</button>`;
+      `<button class="secondary wide" data-ob="own">＋ Add my own exercise</button><button class="ghost wide" data-ob="auto">Use my picks and ★ for the rest</button>`;
     next = OB.pickIdx < list.length - 1 ? 'Next' : 'Review';
   } else if (step === 'done') {
     const plan = buildPlan(d);
@@ -528,28 +550,31 @@ function drawOB(){
     if (k === 'replace') v = !!v;
     if (b.dataset.multi === '1') d[k] = d[k].includes(v) ? d[k].filter(x => x !== v) : d[k].concat(v);
     else d[k] = v;
-    if (['days','split','session','equip','exp','focus','style','reps'].includes(k)) OB.picks = {};
     drawOB();
   });
   el.querySelectorAll('[data-cal]').forEach(b => b.onclick = () => { OB.calDay = +b.dataset.cal; drawOB(); });
   el.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => {
     const t = [['Rest', []]].concat(DAY_TEMPLATES).find(([n]) => n === b.dataset.tpl);
-    d.week[OB.calDay] = t[1].slice(); OB.picks = {}; drawOB();
+    d.week[OB.calDay] = t[1].slice(); drawOB();
   });
   el.querySelectorAll('[data-mus]').forEach(b => b.onclick = () => {
     const m = b.dataset.mus, w = d.week[OB.calDay];
-    d.week[OB.calDay] = w.includes(m) ? w.filter(x => x !== m) : w.concat(m); OB.picks = {}; drawOB();
+    d.week[OB.calDay] = w.includes(m) ? w.filter(x => x !== m) : w.concat(m); drawOB();
   });
   el.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { const it = pickList()[OB.pickIdx]; OB.picks[it.id] = b.dataset.pick; drawOB(); });
   el.querySelectorAll('[data-ob]').forEach(b => b.onclick = () => {
     const a = b.dataset.ob;
     if (a === 'back') obBack();
     else if (a === 'close') closeOB();
+    else if (a === 'own') {
+      const it = pickList()[OB.pickIdx], pool = SLOTS[it.x.slot].pool;
+      editExercise(null, {pool, onDone:e => { if (!OB) return; if (e.pools.includes(pool)) OB.picks[it.id] = e.name; drawOB(); }});
+    }
     else if (a === 'auto') { OB.step = OB_STEPS.indexOf('done'); drawOB(); el.scrollTop = 0; }
     else if (a === 'next') {
       if (step === 'pick') {
         const list = pickList(), it = list[OB.pickIdx];
-        if (!OB.picks[it.id]) OB.picks[it.id] = resolvePicks(buildPlan(d), OB.picks, d.equip)[it.id];
+        OB.picks[it.id] = resolvePicks(buildPlan(d), OB.picks, d.equip)[it.di + ':' + it.si];
         if (OB.pickIdx < list.length - 1) { OB.pickIdx++; drawOB(); el.scrollTop = 0; return; }
       }
       if (step === 'done') { finishOnboarding(); return; }
@@ -564,7 +589,7 @@ function exIdByName(name){
 }
 function finishOnboarding(){
   const d = OB.d, plan = buildPlan(d), sp = splitOf(d);
-  S.user = {name:d.name.trim(), goals:d.goals, exp:d.exp, days:d.days, split:sp.id, week:d.week, style:d.style, reps:d.reps, session:d.session, equip:d.equip, focus:d.focus,
+  S.user = {name:d.name.trim(), goals:d.goals, exp:d.exp, days:d.days, split:sp.id, week:d.week, style:d.style, reps:d.reps, session:d.session, equip:d.equip, focus:d.focus, picks:OB.picks,
     hUnit:d.hUnit, wUnit:d.wUnit, onboarded:true, planVer:PLAN_VERSION, at:Date.now()};
   S.food.profile = {sex:d.sex, age:d.age, height:Math.round(d.height), weight:r1(d.weight), activity:d.activity, goal:d.nGoal};
   S.food.targets = suggestTargets(S.food.profile);
@@ -573,7 +598,7 @@ function finishOnboarding(){
   }
   const names = resolvePicks(plan, OB.picks, d.equip);
   const routines = plan.map((day, di) => ({id:uid(), name:day.name, items:day.slots.map((x, si) => ({
-    exId:exIdByName(names[di + ':' + si]), sets:x.sets, reps:x.reps, rest:x.rest, effort:x.effort}))}));
+    exId:exIdByName(names[di + ':' + si]), slot:x.slot, sets:x.sets, reps:x.reps, rest:x.rest, effort:x.effort}))}));
   const oldProgram = S.program ? S.program.ids : [];
   S.routines = d.replace ? routines : routines.concat(S.routines.filter(r => !oldProgram.includes(r.id)));
   S.program = {split:sp.name, ids:routines.map(r => r.id), created:Date.now()};

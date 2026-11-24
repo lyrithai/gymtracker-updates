@@ -83,10 +83,10 @@ function pickExercise(onPick){
     const inp = b.querySelector('#exq');
     const draw = () => {
       const ql = q.trim().toLowerCase();
-      const list = S.exercises.filter(e => !ql || e.name.toLowerCase().includes(ql));
+      const list = S.exercises.filter(e => !e.hidden).filter(e => !ql || e.name.toLowerCase().includes(ql));
       let h = '';
-      if (ql && !S.exercises.some(e => e.name.toLowerCase() === ql))
-        h += `<button class="pick" data-new="1"><span>+ Create “${esc(q.trim())}”</span><span class="muted small">new</span></button>`;
+      if (!S.exercises.some(e => !e.hidden && e.name.toLowerCase() === ql))
+        h += `<button class="pick" data-new="1"><span>${ql ? '+ Create “' + esc(q.trim()) + '”' : '+ Add my own exercise'}</span><span class="muted small">new</span></button>`;
       MUSCLES.forEach(m => {
         const g = list.filter(e => (e.muscle || 'Other') === m).sort((a, c) => a.name.localeCompare(c.name));
         if (!g.length) return;
@@ -95,12 +95,50 @@ function pickExercise(onPick){
       if (!h) h = '<div class="empty">Nothing found</div>';
       const L = b.querySelector('#exlist'); L.innerHTML = h;
       on(L, '[data-id]', btn => { closeSheet(); onPick(btn.dataset.id); });
-      on(L, '[data-new]', () => { const ex = {id:uid(), name:q.trim(), muscle:'Other'}; S.exercises.push(ex); save(); closeSheet(); onPick(ex.id); });
+      on(L, '[data-new]', () => { closeSheet(); editExercise(null, {name:q.trim(), onDone:e => onPick(e.id)}); });
     };
     inp.oninput = () => { q = inp.value; draw(); };
     draw();
   }, {full:true});
 }
+
+/* ---------- your own exercises ---------- */
+const POOL_GROUP = {upperChest:'Chest', midChest:'Chest', lats:'Back', upperback:'Back', traps:'Back', lowerBack:'Back', frontDelt:'Shoulders', sideDelt:'Shoulders', rearDelt:'Shoulders',
+  triOverhead:'Arms', triNormal:'Arms', biceps:'Arms', brachio:'Arms', flexors:'Arms', extensors:'Arms', quads:'Legs', hamstrings:'Legs', glutes:'Legs', adductors:'Legs', calves:'Legs', abs:'Core', obliques:'Core'};
+const isBuiltIn = e => DEFAULT_EX.some(([n]) => n.toLowerCase() === e.name.toLowerCase());
+const myExercises = () => S.exercises.filter(e => !e.hidden && !isBuiltIn(e));
+function editExercise(ex, opt){
+  opt = opt || {};
+  const opts = Object.keys(POOL_GROUP).map(k => [k, POOL_NAMES[k]]), have = ex ? ex.pools || [] : [opt.pool || ''];
+  ask(ex ? 'Edit exercise' : 'Add my own exercise', [
+    {k:'name', label:'Name', v:ex ? ex.name : opt.name || '', ph:'e.g. Cable Press-Around'},
+    {k:'p1', label:'Main muscle', v:have[0] || '', type:'select', opts:[['', 'Choose…']].concat(opts)},
+    {k:'p2', label:'Also hits (optional)', v:have[1] || '', type:'select', opts:[['', 'Nothing else']].concat(opts)}
+  ], o => {
+    const name = o.name.trim();
+    if (!name) { toast('Name the exercise'); return false; }
+    if (!o.p1) { toast('Choose the main muscle'); return false; }
+    const same = S.exercises.find(e => e !== ex && e.name.toLowerCase() === name.toLowerCase());
+    if (same && (!same.hidden || ex)) { toast('There is already an exercise called ' + same.name); return false; }
+    let e = ex || same;   // same = one you removed before: bring it back with its history
+    if (!e) { e = {id:uid()}; S.exercises.push(e); }
+    const old = e.name;
+    Object.assign(e, {name, pools:[...new Set([o.p1, o.p2].filter(Boolean))], muscle:POOL_GROUP[o.p1], custom:true});
+    delete e.hidden;
+    if (old && old !== name) [S.user && S.user.picks, OB && OB.picks].forEach(p => { if (p) Object.keys(p).forEach(k => { if (p[k] === old) p[k] = name; }); });
+    save(); render(); toast('Saved ' + name);
+    if (opt.onDone) setTimeout(() => opt.onDone(e), 0);   // after this panel has closed
+  });
+}
+ACTIONS['my-ex-new'] = () => editExercise(null);
+ACTIONS['my-ex'] = b => {
+  const e = S.exercises.find(x => x.id === b.dataset.id); if (!e) return;
+  openSheet(s => {
+    html(s, `<h2>${esc(e.name)}</h2><button class="secondary wide" data-x="edit">Edit</button><button class="danger-link wide" data-x="del">Remove</button>`);
+    on(s, '[data-x="edit"]', () => { closeSheet(); editExercise(e); });
+    on(s, '[data-x="del"]', () => { if (!confirm('Remove ' + e.name + ' from your exercise lists? Past workouts keep it.')) return; e.hidden = true; save(); closeSheet(); render(); });
+  });
+};
 
 /* ---------- workout ---------- */
 function startWorkout(name, items){
@@ -237,7 +275,7 @@ function finishWorkout(){
 /* ---------- swap an exercise for another that hits the same muscle ---------- */
 function swapExercise(i){
   const a = S.active, e = a.exercises[i], oldName = exName(e.exId);
-  const pools = Object.entries(POOLS).filter(([, list]) => list.some(o => o[0] === oldName));
+  const pools = Object.keys(POOLS).map(k => [k, poolOf(k)]).filter(([, list]) => list.some(o => o[0] === oldName));
   const inWorkout = a.exercises.map(x => exName(x.exId));
   openSheet(b => {
     html(b, `<h2>Swap ${esc(oldName)}</h2><div class="muted small" style="margin:-8px 0 8px">Same muscle, different movement. Your sets and targets stay.</div>`);
@@ -247,20 +285,24 @@ function swapExercise(i){
       if (!opts.length) return;
       html(b, `<div class="sec">${esc(POOL_NAMES[k] || k)}</div>` + opts.map(o => `<button class="pick" data-n="${esc(o[0])}"><span><b>${esc(o[0])}</b>${o[2] ? `<div class="muted small">${esc(o[2])}</div>` : ''}</span><span class="muted">⇄</span></button>`).join(''));
     });
-    html(b, `<button class="secondary wide" data-any>Pick any other exercise</button>`);
+    html(b, `<button class="secondary wide" data-own>＋ Add my own exercise</button><button class="secondary wide" data-any>Pick any other exercise</button>`);
     const done = name => {
       const newId = exIdByName(name);
       if (e.sets.some(s => s.done) && !confirm('You\'ve logged sets on ' + oldName + '. They\'ll be kept under ' + name + '. Swap anyway?')) return;
       const oldId = e.exId; e.exId = newId; e.sets.forEach(s => { if (!s.done) { s.w = null; s.r = null; } });
-      const r = S.routines.find(x => x.name === a.name && x.items.some(it => it.exId === oldId));
-      if (r && confirm('Swap it in your ' + r.name + ' routine too, so it\'s there next time?')) r.items.forEach(it => { if (it.exId === oldId) it.exId = newId; });
+      const rs = S.routines.filter(x => x.items.some(it => it.exId === oldId));
+      if (rs.length && confirm('Swap it in your plan too (' + [...new Set(rs.map(r => r.name))].join(', ') + ')?')) {
+        rs.forEach(r => r.items.forEach(it => { if (it.exId === oldId) it.exId = newId; }));
+        const p = S.user && S.user.picks; if (p) Object.keys(p).forEach(k => { if (p[k] === oldName) p[k] = name; });
+      }
       save(); closeSheet(); render(); toast('Swapped to ' + name);
     };
     on(b, '[data-n]', btn => done(btn.dataset.n));
+    on(b, '[data-own]', () => editExercise(null, {pool:pools[0] && pools[0][0], onDone:x => done(x.name)}));
     on(b, '[data-any]', () => { closeSheet(); pickExercise(id => done(exName(id))); });
   }, {full:true});
 }
-const POOL_NAMES = {upperChest:'Upper chest', midChest:'Mid chest', lowerChest:'Lower chest', lats:'Lats', upperback:'Upper back (thickness)', traps:'Traps', frontDelt:'Front delts', sideDelt:'Side delts', rearDelt:'Rear delts',
+const POOL_NAMES = {upperChest:'Upper chest', midChest:'Mid & lower chest', lats:'Lats', upperback:'Upper back (thickness)', traps:'Traps', frontDelt:'Front delts', sideDelt:'Side delts', rearDelt:'Rear delts',
   triOverhead:'Triceps long head (overhead)', triNormal:'Triceps (pushdown / press)', biceps:'Biceps', brachio:'Brachioradialis', flexors:'Forearm flexors', extensors:'Forearm extensors', lowerBack:'Lower back', adductors:'Adductors', abductors:'Abductors (glute med)', tibialis:'Tibialis', obliques:'Obliques', neck:'Neck', quads:'Quads', hamstrings:'Hamstrings', glutes:'Glutes', calves:'Calves', abs:'Abs'};
 
 /* ---------- history ---------- */
@@ -359,6 +401,10 @@ VIEWS['gym/routines'] = {render(){
       <div class="muted small">${r.items.map(i => `${esc(exName(i.exId))} · ${i.sets}×${i.reps ? esc(i.reps) : ''}`).join('<br>') || 'No exercises'}</div>
       <button class="secondary wide" data-act="start-routine" data-id="${r.id}">Start ${esc(r.name)}</button></div>`;
   });
+  const mine = myExercises();
+  h += `<div class="sec">My exercises</div>` + mine.map(e => `<button class="food-row" data-act="my-ex" data-id="${e.id}">${miniBody(exerciseKeys(e.name), 46, null, true)}<span class="grow"><div class="nm">${esc(e.name)}</div>
+    <div class="muted small">${(e.pools || []).map(p => esc(POOL_NAMES[p] || p)).join(' · ') || 'No muscle set yet: tap to set one'}</div></span><span class="muted">›</span></button>`).join('') +
+    `<button class="secondary wide" data-act="my-ex-new">＋ Add my own exercise</button>`;
   return h;
 }};
 function editRoutine(id){

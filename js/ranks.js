@@ -4,7 +4,7 @@ const MUSCLE_NAMES = {chest:'Chest', shoulders:'Shoulders', biceps:'Biceps', tri
   lats:'Lats', upperback:'Upper back', lowerback:'Lower back', glutes:'Glutes', quads:'Quads', hamstrings:'Hamstrings', calves:'Calves'};
 // Ranked parts (same as the custom-split picker)
 const UNIT_GROUPS = [
-  ['Chest', [['upperChest','Upper chest'],['midChest','Mid chest'],['lowerChest','Lower chest']]],
+  ['Chest', [['upperChest','Upper chest'],['midChest','Mid & lower chest']]],
   ['Back', [['lats','Lats'],['upperback','Upper back'],['traps','Traps'],['lowerback','Lower back']]],
   ['Shoulders', [['frontDelt','Front delts'],['sideDelt','Side delts'],['rearDelt','Rear delts']]],
   ['Arms', [['biceps','Biceps'],['triceps','Triceps'],['brachio','Brachioradialis'],['flexors','Forearm flexors'],['extensors','Forearm extensors']]],
@@ -26,10 +26,10 @@ const STD = {
   'TNF Press':['upperChest',0.3], 'Low-to-High Cable Fly':['upperChest',0.15], 'Incline Dumbbell Fly':['upperChest',0.18], 'Deficit Push-up':['upperChest',22,'reps'],
   // mid chest
   'Bench Press':['midChest',1.15], 'Paused Bench Press':['midChest',1.1], 'Machine Chest Press':['midChest',1.0], 'Hammer Strength Chest Press':['midChest',1.1],
-  'Dumbbell Bench Press':['midChest',0.42], 'Pec Deck':[['midChest','lowerChest'],0.9], 'Cable Crossover':[['midChest','lowerChest'],0.2], 'Single-Arm Cable Fly':['midChest',0.18],
+  'Dumbbell Bench Press':['midChest',0.42], 'Pec Deck':['midChest',0.9], 'Cable Crossover':['midChest',0.2], 'Single-Arm Cable Fly':['midChest',0.18],
   'Chest Fly':['midChest',0.18], 'Svend Press':['midChest',0.25], 'Push-up':['midChest',30,'reps'],
   // lower chest
-  'High-to-Low Cable Fly':['lowerChest',0.2], 'Decline Bench Press':['lowerChest',1.2], 'Chest Dips':['lowerChest',1.45,'bw'], 'Weighted Dips':['lowerChest',1.45,'bw'],
+  'High-to-Low Cable Fly':['midChest',0.2], 'Decline Bench Press':['midChest',1.2], 'Chest Dips':['midChest',1.45,'bw'], 'Weighted Dips':['midChest',1.45,'bw'],
   // lats
   'Lat Pulldown':['lats',0.95], 'Neutral-Grip Pulldown':['lats',1.0], 'Single-Arm Lat Pulldown':['lats',0.45], 'Kneeling Single-Arm Pulldown':['lats',0.4],
   'Straight-Arm Pulldown':['lats',0.45], 'Cable Pullover':['lats',0.45], 'Keenan Flaps':['lats',0.3], 'Dumbbell Pullover':['lats',0.35],
@@ -126,8 +126,7 @@ const BODY_FRONT = {
   traps: ['M89,56 L75,66 L90,64 Z'],
   deltF: ['M88,64 C74,62 61,67 56,80 C54,88 55,94 58,98 C64,94 70,88 74,80 C78,74 84,70 88,66 Z'],
   chestU: ['M99,67 L88,66 C80,72 75,79 73,87 L99,87 Z'],
-  chestM: ['M99,87 L73,87 C72,90 72,94 72,97 L99,97 Z'],
-  chestL: ['M99,97 L72,97 C72,103 76,106 84,108 C92,110 98,106 99,102 Z'],
+  chestM: ['M99,87 L73,87 C72,90 72,96 72,98 C72,103 76,106 84,108 C92,110 98,106 99,102 Z'],
   deltS: ['M65,69 C59,73 56,79 55,86 C55,91 56,95 58,98 C59,90 61,82 66,74 Z'],
   biceps: ['M57,100 C53,110 52,124 55,136 C59,140 65,140 68,136 C70,124 70,110 68,98 C64,96 60,97 57,100 Z'],
   forearms: ['M54,140 C50,156 49,172 51,188 C55,190 59,190 62,188 C66,172 68,156 67,140 C63,142 58,142 54,140 Z'],
@@ -152,7 +151,7 @@ const BODY_BACK = {
   hamstrings: ['M77,223 C74,239 74,256 77,272 C79,280 82,285 85,287 L96,287 C98,272 99,254 99,236 C99,231 98,227 96,227 C88,229 81,227 77,223 Z'],
   calves: ['M81,303 C76,313 75,328 78,342 C80,356 84,367 87,373 L95,373 C97,360 98,342 97,322 C96,312 94,306 92,303 Z']
 };
-const RANK_KEY = {chestU:'upperChest', chestM:'midChest', chestL:'lowerChest', deltF:'frontDelt', deltS:'sideDelt', deltR:'rearDelt'};
+const RANK_KEY = {chestU:'upperChest', chestM:'midChest', deltF:'frontDelt', deltS:'sideDelt', deltR:'rearDelt'};
 const rankKey = k => RANK_KEY[k] || k;
 /** fill(k) gives each region's colour; clickable regions open the rank sheet */
 function bodySvg(parts, fill, clickable, vb){
@@ -221,21 +220,21 @@ function openMuscle(m){
 }ACTIONS.muscle = b => openMuscle(b.dataset.m);
 
 /* ---------- mini diagrams: light up what a day / slot / exercise trains ---------- */
-const SLOT_KEYS = {chestIncline:['chestU'], chestPress:['chestM'], chestFly:['chestL'], vPull:['lats'], latIso:['lats'], hRow:['upperback'], traps:['traps'],
+const SLOT_KEYS = {chestIncline:['chestU'], chestPress:['chestM'], chestFly:['chestM'], vPull:['lats'], latIso:['lats'], hRow:['upperback'], traps:['traps'],
   ohp:['deltF'], sideDelt:['deltS'], rearDelt:['deltR'], triOH:['triceps'], triPush:['triceps'], biLong:['biceps'], biHammer:['forearms'],
   squat:['quads','glutes','adductors'], legPress:['quads','glutes'], quadIso:['quads'], hinge:['hamstrings','glutes','lowerback'], hamCurl:['hamstrings'], glute:['glutes'], calves:['calves'], abs:['abs'],
   flexors:['forearms'], extensors:['forearms'], lowerBack:['lowerback'], adductors:['adductors'], abductors:['glutes'], tibialis:['tibialis'], obliques:['obliques'], neck:['neck']};
-const MUSCLE_KEYS = {upperChest:['chestU'], midChest:['chestM'], lowerChest:['chestL'], lats:['lats'], upperback:['upperback'], traps:['traps'], lowerback:['lowerback'],
+const MUSCLE_KEYS = {upperChest:['chestU'], midChest:['chestM'], lats:['lats'], upperback:['upperback'], traps:['traps'], lowerback:['lowerback'],
   frontDelt:['deltF'], sideDelt:['deltS'], rearDelt:['deltR'], biceps:['biceps'], triceps:['triceps'], brachio:['forearms'], flexors:['forearms'], extensors:['forearms'],
   quads:['quads'], hamstrings:['hamstrings'], glutes:['glutes'], adductors:['adductors'], abductors:['glutes'], calves:['calves'], tibialis:['tibialis'],
   abs:['abs'], obliques:['obliques'], neck:['neck'],
-  chest:['chestU','chestM','chestL'], back:['lats','upperback'], shoulders:['deltF','deltS','deltR'], forearms:['forearms']};
-const POOL_KEYS = {upperChest:['chestU'], midChest:['chestM'], lowerChest:['chestL'], lats:['lats'], upperback:['upperback'], traps:['traps'], frontDelt:['deltF'],
+  chest:['chestU','chestM'], back:['lats','upperback'], shoulders:['deltF','deltS','deltR'], forearms:['forearms']};
+const POOL_KEYS = {upperChest:['chestU'], midChest:['chestM'], lats:['lats'], upperback:['upperback'], traps:['traps'], frontDelt:['deltF'],
   sideDelt:['deltS'], rearDelt:['deltR'], triOverhead:['triceps'], triNormal:['triceps'], biceps:['biceps'], brachio:['forearms'], flexors:['forearms'], extensors:['forearms'], lowerBack:['lowerback'],
   adductors:['adductors'], abductors:['glutes'], tibialis:['tibialis'], obliques:['obliques'], neck:['neck'], quads:['quads'],
   hamstrings:['hamstrings'], glutes:['glutes'], calves:['calves'], abs:['abs']};
 /** keys: regions to light up. second: regions to light up softly (e.g. indirectly worked). */
-const FRONT_ONLY = ['chestU','chestM','chestL','deltF','biceps','abs','obliques','quads','adductors','tibialis'], BACK_ONLY = ['deltR','upperback','lats','triceps','lowerback','glutes','hamstrings'];
+const FRONT_ONLY = ['chestU','chestM','deltF','biceps','abs','obliques','quads','adductors','tibialis'], BACK_ONLY = ['deltR','upperback','lats','triceps','lowerback','glutes','hamstrings'];
 /** auto: only draw the side(s) of the body that are working (for small spaces) */
 function miniBody(keys, h, second, auto){
   const on_ = new Set(keys || []), soft = new Set(second || []);
@@ -250,6 +249,6 @@ function miniBody(keys, h, second, auto){
 }
 function exerciseKeys(name){
   const k = new Set();
-  Object.entries(POOLS).forEach(([p, list]) => { if (list.some(o => o[0] === name)) (POOL_KEYS[p] || []).forEach(x => k.add(x)); });
+  Object.keys(POOLS).forEach(p => { if (poolOf(p).some(o => o[0] === name)) (POOL_KEYS[p] || []).forEach(x => k.add(x)); });
   return [...k];
 }
