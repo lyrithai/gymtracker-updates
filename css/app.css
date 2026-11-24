@@ -192,6 +192,15 @@ canvas{width:100%;height:200px;display:block}
 #rest.done{border-color:var(--accent)}
 #rest.done b{color:var(--accent)}
 
+.coach.warn{color:#fcd34d;background:rgba(251,191,36,.10)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:74px;padding:8px 2px;border-radius:12px;border:2px solid transparent;background:var(--card);color:var(--text)}
+.cal-day b{font-size:13px}
+.cal-day span{font-size:10px;line-height:1.15;color:var(--accent);text-align:center;word-break:break-word}
+.cal-day.rest span{color:var(--muted)}
+.cal-day.on{border-color:var(--accent)}
+.mchip{border:0;min-height:36px;padding:0 12px;font-size:13px;font-weight:600}
+
 /* ranks body */
 .bodies{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0}
 .body{width:100%;height:auto;display:block}

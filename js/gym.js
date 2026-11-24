@@ -26,7 +26,7 @@ const EX_LIB = {
     'Leg Press Calf Raise','Tibialis Raise'],
   Arms: ['Bicep Curl','Barbell Curl','EZ Bar Curl','Incline Dumbbell Curl','Bayesian Curl','Cable Curl','Preacher Curl',
     'Machine Preacher Curl','Spider Curl','Drag Curl','Hammer Curl','Cross-Body Hammer Curl','Concentration Curl',
-    'Reverse Curl','TNF Reverse Curl','Zottman Curl','Tricep Pushdown','Rope Pushdown','Overhead Cable Tricep Extension',
+    'Reverse Curl','TNF Reverse Curl','Zottman Curl','Tricep Pushdown','Rope Pushdown','Overhead Cable Tricep Extension','Overhead Dumbbell Tricep Extension',
     'Katana Tricep Extension','Cross-Body Tricep Extension','Skull Crusher','Dumbbell Skull Crusher','JM Press',
     'Tate Press','Tricep Kickback','Dips','Wrist Curl','Reverse Wrist Curl'],
   Core: ['Plank','Side Plank','Copenhagen Plank','Cable Crunch','Hanging Leg Raise','Hanging Knee Raise','Toes-to-Bar',
@@ -151,7 +151,7 @@ VIEWS['gym/workout'] = {
     const nx = nextProgramRoutine();
     if (S.program && S.user && (S.user.planVer || 1) < PLAN_VERSION) h += `<button class="card tap" data-act="onboard" style="color:var(--text);border:1px solid var(--accent)"><b>⚡ Your plan got an upgrade</b>
         <div class="muted small">Low volume, high intensity: 1–2 sets to failure, double progression, new split options and signature moves. Tap to rebuild yours.</div></button>`;
-    if (S.program && nx) h += `<div class="card"><div class="muted small">${esc(S.program.split)} · next up</div><div class="item"><b style="font-size:20px">${esc(nx.r.name)}</b>
+    if (S.program && nx) h += `<div class="card"><div class="muted small">${esc(S.program.split)} · ${nx.today ? 'today' : nx.rest ? 'rest day today 😴 · next on ' + nx.on : nx.doneToday ? 'done today ✓ · next on ' + nx.on : 'next up'}</div><div class="item"><b style="font-size:20px">${esc(nx.r.name)}</b>
         <button class="primary" style="min-height:44px" data-act="start-routine" data-id="${nx.r.id}">Start</button></div>
         <div class="chips">${nx.r.items.map(i => `<span class="chip">${esc(exName(i.exId))}</span>`).join('')}</div></div>`;
     else h += `<button class="card tap" data-act="onboard" style="color:var(--text)"><b>✨ Build me a program</b><div class="muted small">Answer a few questions and get a science-based split with movements you pick.</div></button>`;
@@ -260,8 +260,8 @@ function swapExercise(i){
     on(b, '[data-any]', () => { closeSheet(); pickExercise(id => done(exName(id))); });
   }, {full:true});
 }
-const POOL_NAMES = {chest:'Chest', lats:'Lats (back width)', upperback:'Upper back (thickness)', traps:'Traps', delts:'Shoulders', sideDelt:'Side delts', rearDelt:'Rear delts',
-  triceps:'Triceps', biceps:'Biceps', forearms:'Forearms', quads:'Quads', hamstrings:'Hamstrings', glutes:'Glutes', calves:'Calves', abs:'Abs'};
+const POOL_NAMES = {upperChest:'Upper chest', midChest:'Mid chest', lowerChest:'Lower chest', lats:'Lats', upperback:'Upper back (thickness)', traps:'Traps', frontDelt:'Front delts', sideDelt:'Side delts', rearDelt:'Rear delts',
+  triOverhead:'Triceps long head (overhead)', triNormal:'Triceps (pushdown / press)', biceps:'Biceps', forearms:'Forearms', quads:'Quads', hamstrings:'Hamstrings', glutes:'Glutes', calves:'Calves', abs:'Abs'};
 
 /* ---------- history ---------- */
 VIEWS['gym/history'] = {render(){

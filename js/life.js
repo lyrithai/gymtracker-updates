@@ -77,7 +77,8 @@ VIEWS.today = {
     else {
       h += `<button class="ghost" data-act="go" data-tab="gym" data-sub="workout">Open</button></div>`;
       const nx = nextProgramRoutine();
-      if (nx) h += `<button class="secondary wide" data-act="start-routine" data-id="${nx.r.id}">Start ${esc(nx.r.name)}${nx.known || S.program ? ' (next up)' : ''}</button>`;
+      if (nx && nx.rest) h += `<div class="muted small">Rest day today 😴 Recovery is when you grow. Next: ${esc(nx.r.name)} on ${nx.on}.</div>`;
+      else if (nx) h += `<button class="secondary wide" data-act="start-routine" data-id="${nx.r.id}">Start ${esc(nx.r.name)}${nx.today ? ' (today)' : nx.known || S.program ? ' (next up)' : ''}</button>`;
     }
     h += `</div>`;
     // water
