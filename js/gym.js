@@ -24,7 +24,7 @@ const EX_LIB = {
     'Smith Machine Hip Thrust','Glute Bridge','KAS Glute Bridge','Frog Pump','Cable Glute Kickback',
     'Cable Pull-Through','Hip Abduction','Cable Hip Abduction','Banded Lateral Walk','Hip Adduction','Standing Calf Raise','Seated Calf Raise',
     'Leg Press Calf Raise','Tibialis Raise'],
-  Arms: ['Bicep Curl','Barbell Curl','EZ Bar Curl','Incline Dumbbell Curl','Bayesian Curl','Cable Curl','Preacher Curl',
+  Arms: ['Bicep Curl','Barbell Curl','EZ Bar Curl','Recline Curl','Incline Dumbbell Curl','Bayesian Curl','Cable Curl','Preacher Curl',
     'Machine Preacher Curl','Spider Curl','Drag Curl','Hammer Curl','Cross-Body Hammer Curl','Concentration Curl',
     'Reverse Curl','TNF Reverse Curl','Zottman Curl','Tricep Pushdown','Rope Pushdown','Overhead Cable Tricep Extension','Overhead Dumbbell Tricep Extension',
     'Katana Tricep Extension','Cross-Body Tricep Extension','Skull Crusher','Dumbbell Skull Crusher','JM Press',

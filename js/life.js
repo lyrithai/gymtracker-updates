@@ -81,6 +81,7 @@ VIEWS.today = {
       else if (nx) h += `<button class="secondary wide" data-act="start-routine" data-id="${nx.r.id}">Start ${esc(nx.r.name)}${nx.today ? ' (today)' : nx.known || S.program ? ' (next up)' : ''}</button>`;
     }
     h += `</div>`;
+    h += scheduleCard();
     // water
     const water = S.body.water[dk] || 0, wg = S.body.waterGoal;
     h += `<div class="card"><div class="item"><b>💧 Water</b><span class="muted small">${(water / 1000).toFixed(2)} / ${(wg / 1000).toFixed(1)} L</span></div>

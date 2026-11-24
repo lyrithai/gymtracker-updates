@@ -50,7 +50,7 @@ const STD = {
   'Cable Y-Raise':['sideDelt',0.08], 'Machine Lateral Raise':['sideDelt',0.45], 'Upright Row':['sideDelt',0.55], 'Cable Upright Row':['sideDelt',0.5],
   'Reverse Pec Deck':['rearDelt',0.6], 'Cable Rear Delt Fly':['rearDelt',0.1], 'Face Pull':['rearDelt',0.45], 'Rear Delt Fly':['rearDelt',0.12],
   // arms
-  'Preacher Curl':['biceps',0.45], 'Machine Preacher Curl':['biceps',0.5], 'Bayesian Curl':['biceps',0.15], 'Incline Dumbbell Curl':['biceps',0.18], 'Cable Curl':['biceps',0.5],
+  'Preacher Curl':['biceps',0.45], 'Machine Preacher Curl':['biceps',0.5], 'Bayesian Curl':['biceps',0.15], 'Incline Dumbbell Curl':['biceps',0.18], 'Recline Curl':['biceps',0.18], 'Cable Curl':['biceps',0.5],
   'EZ Bar Curl':['biceps',0.55], 'Barbell Curl':['biceps',0.55], 'Bicep Curl':['biceps',0.22], 'Spider Curl':['biceps',0.18], 'Concentration Curl':['biceps',0.2], 'Drag Curl':['biceps',0.45],
   'Overhead Cable Tricep Extension':['triceps',0.5], 'Katana Tricep Extension':['triceps',0.25], 'Overhead Dumbbell Tricep Extension':['triceps',0.3], 'Tricep Pushdown':['triceps',0.6],
   'Rope Pushdown':['triceps',0.5], 'JM Press':['triceps',0.8], 'Skull Crusher':['triceps',0.5], 'Dumbbell Skull Crusher':['triceps',0.2], 'Cross-Body Tricep Extension':['triceps',0.15],

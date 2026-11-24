@@ -9,7 +9,7 @@ const TABS = {
   food:    {title:'Food', subs:[['diary','Diary'],['nutrients','Nutrients'],['mine','My foods']]},
   recipes: {title:'Recipes', subs:[['browse','Recipes'],['prep','Meal prep']]},
   gym:     {title:'Gym', subs:[['workout','Workout'],['ranks','Ranks'],['history','History'],['progress','Progress'],['routines','Routines']]},
-  life:    {title:'Life', subs:[['todo','To-do'],['habits','Habits'],['body','Body']]}
+  life:    {title:'Life', subs:[['todo','To-do'],['schedule','Schedule'],['habits','Habits'],['body','Body']]}
 };
 let tab = 'today';
 const sub = {food:'diary', recipes:'browse', gym:'workout', life:'todo'};
@@ -65,6 +65,8 @@ function defaults(d){
   d.body.water = d.body.water || {};
   d.body.sleep = d.body.sleep || {};
   d.body.waterGoal = d.body.waterGoal || 2500;
+  d.blocks = d.blocks || [];
+  d.blockDone = d.blockDone || {};
   if (d.user === undefined) d.user = null;
   if (d.program === undefined) d.program = null;
   return d;
