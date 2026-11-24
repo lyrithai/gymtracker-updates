@@ -77,7 +77,7 @@ function overallRank(R){
 
 /* ---------- body diagram (original artwork, left half mirrored) ---------- */
 const BODY_FRONT = {
-  _skin: ['M100,9 C111,9 117,19 117,31 C117,43 110,51 100,51 Z', 'M91,49 L100,49 L100,62 L89,62 Z', 'M56,190 C51,192 50,202 53,208 C57,212 62,210 63,204 C64,198 62,191 56,190 Z',
+  _skin: ['M100,9 C111,9 117,19 117,31 C117,43 110,51 100,51 Z', 'M56,190 C51,192 50,202 53,208 C57,212 62,210 63,204 C64,198 62,191 56,190 Z',
           'M80,168 C88,176 96,180 100,182 L100,198 L80,198 C78,188 78,178 80,168 Z', 'M83,287 C80,292 81,300 85,303 L95,303 C98,299 98,291 95,287 Z', 'M84,375 L96,375 L99,389 L77,389 Z'],
   traps: ['M89,56 L75,66 L90,64 Z'],
   deltF: ['M88,64 C74,62 61,67 56,80 C54,88 55,94 58,98 C64,94 70,88 74,80 C78,74 84,70 88,66 Z'],
@@ -85,12 +85,17 @@ const BODY_FRONT = {
   chestL: ['M99,87 L73,87 C72,90 72,96 72,98 C72,103 76,106 84,108 C92,110 98,106 99,102 Z'],
   biceps: ['M57,100 C53,110 52,124 55,136 C59,140 65,140 68,136 C70,124 70,110 68,98 C64,96 60,97 57,100 Z'],
   forearms: ['M54,140 C50,156 49,172 51,188 C55,190 59,190 62,188 C66,172 68,156 67,140 C63,142 58,142 54,140 Z'],
-  abs: ['M99,110 L89,112 C87,128 87,146 89,166 C93,170 96,172 99,172 Z', 'M87,112 C81,110 77,108 75,106 C74,124 76,144 80,160 C82,166 85,169 87,169 C85,150 85,130 87,112 Z'],
-  quads: ['M80,199 C74,214 72,236 74,258 C76,272 80,281 84,285 L96,285 C98,270 99,248 99,228 C99,214 99,204 98,199 Z'],
-  calves: ['M82,305 C77,319 77,338 80,355 C82,365 84,371 86,373 L94,373 C96,360 97,340 96,322 C96,314 95,308 94,305 Z']
+  abs: ['M99,110 L89,112 C87,128 87,146 89,166 C93,170 96,172 99,172 Z'],
+  obliques: ['M87,112 C81,110 77,108 75,106 C74,124 76,144 80,160 C82,166 85,169 87,169 C85,150 85,130 87,112 Z'],
+  neck: ['M91,49 L100,49 L100,62 L89,62 Z'],
+  quads: ['M80,199 C74,214 72,236 74,258 C76,272 80,281 84,285 L92,285 C93,262 93,236 92,212 C92,206 93,201 94,199 Z'],
+  adductors: ['M94,199 L98,199 C99,206 99,216 99,228 C99,248 98,268 96,285 L92,285 C93,262 93,236 92,212 C92,206 93,201 94,199 Z'],
+  calves: ['M82,305 C77,319 77,338 80,355 C82,365 84,371 86,373 L88,373 C87,350 86,326 87,305 Z'],
+  tibialis: ['M87,305 C86,326 87,350 88,373 L94,373 C96,360 97,340 96,322 C96,314 95,308 94,305 Z']
 };
 const BODY_BACK = {
-  _skin: BODY_FRONT._skin.slice(0, 4).concat(['M83,289 C80,293 81,299 85,301 L95,301 C98,298 98,292 95,289 Z', 'M84,375 L96,375 L99,389 L77,389 Z']),
+  neck: BODY_FRONT.neck,
+  _skin: BODY_FRONT._skin.slice(0, 3).concat(['M83,289 C80,293 81,299 85,301 L95,301 C98,298 98,292 95,289 Z', 'M84,375 L96,375 L99,389 L77,389 Z']),
   traps: ['M100,50 L91,53 C86,58 80,62 73,66 C83,70 93,78 100,98 Z'],
   deltR: ['M73,66 C63,68 57,76 55,88 C56,94 58,98 60,98 C64,90 70,82 78,74 Z'],
   upperback: ['M100,98 C94,86 86,76 79,74 C75,82 75,92 79,101 C86,105 94,108 100,110 Z'],
@@ -102,7 +107,7 @@ const BODY_BACK = {
   hamstrings: ['M77,223 C74,239 74,256 77,272 C79,280 82,285 85,287 L96,287 C98,272 99,254 99,236 C99,231 98,227 96,227 C88,229 81,227 77,223 Z'],
   calves: ['M81,303 C76,313 75,328 78,342 C80,356 84,367 87,373 L95,373 C97,360 98,342 97,322 C96,312 94,306 92,303 Z']
 };
-const RANK_KEY = {chestU:'chest', chestL:'chest', deltF:'shoulders', deltR:'shoulders'};
+const RANK_KEY = {chestU:'chest', chestL:'chest', deltF:'shoulders', deltR:'shoulders', obliques:'abs', adductors:'quads', tibialis:'calves'};
 const rankKey = k => RANK_KEY[k] || k;
 /** fill(k) gives each region's colour; clickable regions open the rank sheet */
 function bodySvg(parts, fill, clickable, vb){
@@ -111,7 +116,7 @@ function bodySvg(parts, fill, clickable, vb){
   for (const [k, paths] of Object.entries(parts)) {
     const col = k === '_skin' ? '#1d2129' : fill(k);
     paths.forEach(d => {
-      const attrs = k === '_skin' || !clickable ? '' : ` data-act="muscle" data-m="${rankKey(k)}"`;
+      const attrs = k === '_skin' || !clickable || !MUSCLE_NAMES[rankKey(k)] ? '' : ` data-act="muscle" data-m="${rankKey(k)}"`;
       s += `<path d="${d}" fill="${col}"${attrs}/><path d="${d}" fill="${col}" transform="translate(200,0) scale(-1,1)"${attrs}/>`;
     });
   }
@@ -159,14 +164,19 @@ ACTIONS.muscle = b => openMuscle(b.dataset.m);
 /* ---------- mini diagrams: light up what a day / slot / exercise trains ---------- */
 const SLOT_KEYS = {chestIncline:['chestU'], chestPress:['chestU','chestL'], chestFly:['chestL'], vPull:['lats'], latIso:['lats'], hRow:['upperback'], traps:['traps'],
   ohp:['deltF'], sideDelt:['deltF','deltR'], rearDelt:['deltR'], triOH:['triceps'], triPush:['triceps'], biLong:['biceps'], biHammer:['forearms'],
-  squat:['quads','glutes'], legPress:['quads','glutes'], quadIso:['quads'], hinge:['hamstrings','glutes','lowerback'], hamCurl:['hamstrings'], glute:['glutes'], calves:['calves'], abs:['abs']};
-const MUSCLE_KEYS = {chest:['chestU','chestL'], back:['lats','upperback','lowerback'], shoulders:['deltF','deltR'], biceps:['biceps'], triceps:['triceps'], forearms:['forearms'],
-  traps:['traps'], quads:['quads'], hamstrings:['hamstrings'], glutes:['glutes'], calves:['calves'], abs:['abs']};
+  squat:['quads','glutes','adductors'], legPress:['quads','glutes'], quadIso:['quads'], hinge:['hamstrings','glutes','lowerback'], hamCurl:['hamstrings'], glute:['glutes'], calves:['calves'], abs:['abs'],
+  flexors:['forearms'], extensors:['forearms'], lowerBack:['lowerback'], adductors:['adductors'], abductors:['glutes'], tibialis:['tibialis'], obliques:['obliques'], neck:['neck']};
+const MUSCLE_KEYS = {upperChest:['chestU'], midChest:['chestU','chestL'], lowerChest:['chestL'], lats:['lats'], upperback:['upperback'], traps:['traps'], lowerback:['lowerback'],
+  frontDelt:['deltF'], sideDelt:['deltF','deltR'], rearDelt:['deltR'], biceps:['biceps'], triceps:['triceps'], brachio:['forearms'], flexors:['forearms'], extensors:['forearms'],
+  quads:['quads'], hamstrings:['hamstrings'], glutes:['glutes'], adductors:['adductors'], abductors:['glutes'], calves:['calves'], tibialis:['tibialis'],
+  abs:['abs'], obliques:['obliques'], neck:['neck'],
+  chest:['chestU','chestL'], back:['lats','upperback'], shoulders:['deltF','deltR'], forearms:['forearms']};
 const POOL_KEYS = {upperChest:['chestU'], midChest:['chestU','chestL'], lowerChest:['chestL'], lats:['lats'], upperback:['upperback'], traps:['traps'], frontDelt:['deltF'],
-  sideDelt:['deltF','deltR'], rearDelt:['deltR'], triOverhead:['triceps'], triNormal:['triceps'], biceps:['biceps'], forearms:['forearms'], quads:['quads'],
+  sideDelt:['deltF','deltR'], rearDelt:['deltR'], triOverhead:['triceps'], triNormal:['triceps'], biceps:['biceps'], brachio:['forearms'], flexors:['forearms'], extensors:['forearms'], lowerBack:['lowerback'],
+  adductors:['adductors'], abductors:['glutes'], tibialis:['tibialis'], obliques:['obliques'], neck:['neck'], quads:['quads'],
   hamstrings:['hamstrings'], glutes:['glutes'], calves:['calves'], abs:['abs']};
 /** keys: regions to light up. second: regions to light up softly (e.g. indirectly worked). */
-const FRONT_ONLY = ['chestU','chestL','deltF','biceps','abs','quads'], BACK_ONLY = ['deltR','upperback','lats','triceps','lowerback','glutes','hamstrings'];
+const FRONT_ONLY = ['chestU','chestL','deltF','biceps','abs','obliques','quads','adductors','tibialis'], BACK_ONLY = ['deltR','upperback','lats','triceps','lowerback','glutes','hamstrings'];
 /** auto: only draw the side(s) of the body that are working (for small spaces) */
 function miniBody(keys, h, second, auto){
   const on_ = new Set(keys || []), soft = new Set(second || []);

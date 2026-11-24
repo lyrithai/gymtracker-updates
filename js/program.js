@@ -30,8 +30,16 @@ const POOLS = {
   triNormal: [['Tricep Pushdown','m','Simple to load heavy'],['JM Press','b','Heavy triceps press, a social-media favourite'],['Rope Pushdown','m',''],['Skull Crusher','b',''],
     ['Cross-Body Tricep Extension','m',''],['Dips','w','Bodyweight compound'],['Close-Grip Bench Press','b',''],['Dumbbell Skull Crusher','d',''],['Tricep Kickback','d','']],  biceps: [['Preacher Curl','m','Arm locked in, only the biceps can fail'],['Hammer Curl','d','Biceps plus forearms'],['Bayesian Curl','m','Cable tension at the stretch'],['Incline Dumbbell Curl','d','Biceps at full stretch'],
     ['Cable Curl','m',''],['EZ Bar Curl','b',''],['Machine Preacher Curl','m',''],['Spider Curl','d',''],['Concentration Curl','d','']],
-  forearms: [['Reverse Curl','b','Brachioradialis and forearms, palms down'],['Hammer Curl','d','Neutral grip, forearms plus biceps'],['TNF Reverse Curl','m','Reverse-grip curl variation'],['Cross-Body Hammer Curl','d',''],['Zottman Curl','d','Curl up palms-up, lower palms-down'],['Wrist Curl','b','Forearm flexors'],['Reverse Wrist Curl','b','Forearm extensors']],
-  quads: [['Pendulum Squat','m','Deep knee bend, quads take everything'],['Leg Extension','m','Do it first on leg day'],['Leg Press','m','Heavy and safe to push hard'],['Hack Squat','m',''],
+  brachio: [['Reverse Curl','b','Palms down: brachioradialis does the work'],['Hammer Curl','d','Neutral grip, brachioradialis plus biceps'],['TNF Reverse Curl','m','Reverse-grip curl variation'],
+    ['Cross-Body Hammer Curl','d',''],['Zottman Curl','d','Curl up palms-up, lower palms-down']],
+  flexors: [['Wrist Curl','b','Forearm flexors, palms up'],['Dumbbell Wrist Curl','d',''],["Farmer's Carry",'d','Grip and flexors under load']],
+  extensors: [['Reverse Wrist Curl','b','Forearm extensors, palms down'],['Dumbbell Reverse Wrist Curl','d',''],['Reverse Curl','b','']],
+  lowerBack: [['45° Back Extension','m','Erectors with hamstrings and glutes'],['Back Extension','w',''],['Good Morning','b',''],['Jefferson Curl','b','Light and slow, spine through flexion']],
+  adductors: [['Hip Adduction','m','Inner thighs, easy to load'],['Copenhagen Plank','w','Bodyweight adductor killer']],
+  abductors: [['Hip Abduction','m','Glute med, side of the hip'],['Cable Hip Abduction','m',''],['Banded Lateral Walk','w','']],
+  tibialis: [['Tibialis Raise','w','Front of the shin, knee and ankle health']],
+  obliques: [['Cable Woodchopper','m','Rotation under load'],['Pallof Press','m','Anti-rotation'],['Side Plank','w',''],['Russian Twist','w','']],
+  neck: [['Neck Curl','w','Front of the neck'],['Neck Extension','w','Back of the neck'],['Lateral Neck Flexion','w','Sides of the neck']],  quads: [['Pendulum Squat','m','Deep knee bend, quads take everything'],['Leg Extension','m','Do it first on leg day'],['Leg Press','m','Heavy and safe to push hard'],['Hack Squat','m',''],
     ['Smith Machine Squat','m',''],['Belt Squat','m',''],['Squat','b','Best for overall strength'],['Bulgarian Split Squat','d','Big glute and quad stretch'],['Walking Lunge','d',''],
     ['Goblet Squat','d','Works at home'],['Sissy Squat','w',''],['Reverse Nordic','w','']],
   hamstrings: [['Seated Leg Curl','m','Hamstrings at length, more growth'],['Romanian Deadlift','b','Best hamstring stretch under load'],['Lying Leg Curl','m',''],['Stiff-Leg Deadlift','b',''],
@@ -55,7 +63,15 @@ const SLOTS = {
   triOH:       {m:'triceps', pool:'triOverhead', label:'Triceps long head (overhead)', prefer:['Overhead Cable Tricep Extension','Overhead Dumbbell Tricep Extension']},
   triPush:     {m:'triceps', pool:'triNormal', label:'Triceps (pushdown / press)', prefer:['Tricep Pushdown','JM Press','Dips']},
   biLong:      {m:'biceps', pool:'biceps', label:'Biceps', prefer:['Preacher Curl','Incline Dumbbell Curl']},
-  biHammer:    {m:'forearms', pool:'forearms', label:'Forearms & brachialis', small:1, prefer:['Reverse Curl','Hammer Curl']},
+  biHammer:    {m:'forearms', pool:'brachio', label:'Brachioradialis', small:1, prefer:['Reverse Curl','Hammer Curl']},
+  flexors:     {m:'forearms', pool:'flexors', label:'Forearm flexors', small:1, prefer:['Wrist Curl','Dumbbell Wrist Curl']},
+  extensors:   {m:'forearms', pool:'extensors', label:'Forearm extensors', small:1, prefer:['Reverse Wrist Curl','Dumbbell Reverse Wrist Curl']},
+  lowerBack:   {m:'lowerback', pool:'lowerBack', label:'Lower back (erectors)', prefer:['45° Back Extension','Back Extension']},
+  adductors:   {m:'adductors', pool:'adductors', label:'Adductors (inner thigh)', prefer:['Hip Adduction','Copenhagen Plank']},
+  abductors:   {m:'glutes', pool:'abductors', label:'Abductors (glute med)', small:1, prefer:['Hip Abduction','Banded Lateral Walk']},
+  tibialis:    {m:'tibialis', pool:'tibialis', label:'Tibialis (shins)', small:1, prefer:['Tibialis Raise']},
+  obliques:    {m:'abs', pool:'obliques', label:'Obliques', small:1, prefer:['Cable Woodchopper','Side Plank']},
+  neck:        {m:'neck', pool:'neck', label:'Neck', small:1, prefer:['Neck Curl']},
   squat:       {m:'quads', pool:'quads', label:'Quads (squat)', big:1, prefer:['Pendulum Squat','Hack Squat','Goblet Squat']},
   legPress:    {m:'quads', pool:'quads', label:'Quads & glutes (press)', big:1, prefer:['Leg Press','Bulgarian Split Squat']},
   quadIso:     {m:'quads', pool:'quads', label:'Quads (leg extension)', prefer:['Leg Extension','Sissy Squat']},
@@ -69,12 +85,12 @@ const SLOTS = {
 const DAYS = {
   fb:   ['Full Body', [['chestIncline',1],['vPull',1],['chestFly',2],['hRow',1],['sideDelt',1],['triOH',1],['triPush',1],['biLong',1],['squat',1],['hamCurl',1],['quadIso',2],['hinge',2],['calves',2],['latIso',3],['biHammer',3],['abs',3]]],
   up:   ['Upper', [['chestIncline',1],['vPull',1],['chestFly',1],['hRow',1],['latIso',2],['sideDelt',1],['triOH',1],['triPush',1],['biLong',1],['rearDelt',2],['traps',2],['biHammer',3]]],
-  lo:   ['Lower', [['calves',1],['quadIso',1],['squat',1],['hamCurl',1],['hinge',1],['legPress',2],['glute',3],['abs',3]]],
+  lo:   ['Lower', [['calves',1],['quadIso',1],['squat',1],['hamCurl',1],['hinge',1],['legPress',2],['adductors',3],['glute',3],['abs',3]]],
   ant:  ['Anterior', [['chestIncline',1],['chestFly',1],['sideDelt',1],['triOH',1],['triPush',1],['biLong',1],['quadIso',1],['squat',1],['abs',3]]],
   post: ['Posterior', [['vPull',1],['hRow',1],['latIso',2],['rearDelt',1],['traps',2],['biHammer',3],['hamCurl',1],['hinge',1],['glute',2],['calves',2]]],
   push: ['Push', [['chestIncline',1],['chestFly',1],['sideDelt',1],['triOH',1],['triPush',1],['rearDelt',3]]],
   pull: ['Pull', [['vPull',1],['hRow',1],['latIso',1],['rearDelt',1],['traps',2],['biLong',1],['biLong',2],['biHammer',2]]],
-  legs: ['Legs', [['calves',1],['quadIso',1],['squat',1],['hamCurl',1],['hinge',1],['legPress',2],['abs',2]]],
+  legs: ['Legs', [['calves',1],['quadIso',1],['squat',1],['hamCurl',1],['hinge',1],['legPress',2],['adductors',3],['abs',2]]],
   bChest:['Chest', [['chestIncline',1],['chestPress',1],['chestFly',1],['triOH',2],['triPush',2],['abs',3]]],
   bBack: ['Back', [['vPull',1],['hRow',1],['latIso',1],['traps',2],['rearDelt',2]]],
   bLegs: ['Legs', [['calves',1],['quadIso',1],['squat',1],['hamCurl',1],['hinge',1],['legPress',2],['glute',3]]],
@@ -100,7 +116,7 @@ const STYLES = {
   std3:  {name:'3 sets, pick which go to failure', sub:'More sets means more fatigue, so only the last set goes to failure, the rest stop 1–2 short.', sets:3, effort:'last set to failure, the rest 1–2 short'}
 };
 const FOCUS = [['chest','Chest'],['back','Back'],['shoulders','Shoulders'],['arms','Arms'],['legs','Legs'],['glutes','Glutes']];
-const FOCUS_OF = {forearms:['arms'], chest:['chest'], lats:['back'], upperback:['back'], traps:['back'], shoulders:['shoulders'], biceps:['arms'], triceps:['arms'], quads:['legs'], hamstrings:['legs','glutes'], glutes:['glutes'], calves:['legs'], abs:[]};
+const FOCUS_OF = {forearms:['arms'], adductors:['legs'], tibialis:['legs'], lowerback:['back'], neck:[], chest:['chest'], lats:['back'], upperback:['back'], traps:['back'], shoulders:['shoulders'], biceps:['arms'], triceps:['arms'], quads:['legs'], hamstrings:['legs','glutes'], glutes:['glutes'], calves:['legs'], abs:[]};
 const EQUIP = {full:['m','b','d','w'], basic:['b','d','w'], home:['d','w']};
 
 /** Options for a slot: its muscle's whole pool (equipment-filtered), ★ preferred moves first, minus names in 'exclude'. */
@@ -127,49 +143,79 @@ function resolvePicks(plan, picks, equip){
 /* ---------- custom split: muscles per weekday ---------- */
 const WEEKDAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const WEEKDAY_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-const CUSTOM_MUSCLES = [['chest','Chest'],['back','Back'],['shoulders','Shoulders'],['biceps','Biceps'],['triceps','Triceps'],['forearms','Forearms'],
-  ['traps','Traps'],['quads','Quads'],['hamstrings','Hamstrings'],['glutes','Glutes'],['calves','Calves'],['abs','Abs']];
+// every trainable part, grouped by region (the order also sets the order in a session)
+const CM_GROUPS = [
+  ['Chest', [['upperChest','Upper chest'],['midChest','Mid chest'],['lowerChest','Lower chest']]],
+  ['Back', [['lats','Lats'],['upperback','Upper back'],['traps','Traps'],['lowerback','Lower back']]],
+  ['Shoulders', [['frontDelt','Front delts'],['sideDelt','Side delts'],['rearDelt','Rear delts']]],
+  ['Arms', [['biceps','Biceps'],['triceps','Triceps'],['brachio','Brachioradialis'],['flexors','Forearm flexors'],['extensors','Forearm extensors']]],
+  ['Legs', [['quads','Quads'],['hamstrings','Hamstrings'],['glutes','Glutes'],['adductors','Adductors'],['abductors','Abductors'],['calves','Calves'],['tibialis','Tibialis']]],
+  ['Core & neck', [['abs','Abs'],['obliques','Obliques'],['neck','Neck']]]
+];
+const CUSTOM_MUSCLES = [].concat(...CM_GROUPS.map(g => g[1]));
 const CM_LABEL = Object.fromEntries(CUSTOM_MUSCLES);
-const MUSCLE_SLOTS = {chest:[['chestIncline',1],['chestFly',1],['chestPress',3]], back:[['vPull',1],['hRow',1],['latIso',2]],
-  shoulders:[['sideDelt',1],['ohp',2],['rearDelt',2]], biceps:[['biLong',1]], triceps:[['triOH',1],['triPush',1]], forearms:[['biHammer',1]], traps:[['traps',1]],
-  quads:[['quadIso',1],['squat',1],['legPress',2]], hamstrings:[['hamCurl',1],['hinge',1]], glutes:[['glute',1]], calves:[['calves',1]], abs:[['abs',1]]};
-const DAY_TEMPLATES = [['Push',['chest','shoulders','triceps']],['Pull',['back','biceps','forearms','traps']],['Legs',['quads','hamstrings','glutes','calves','abs']],
-  ['Upper',['chest','back','shoulders','biceps','triceps','traps']],['Lower',['quads','hamstrings','glutes','calves','abs']],['Full Body',['chest','back','shoulders','biceps','triceps','quads','hamstrings']],
-  ['Anterior',['chest','shoulders','quads','biceps','triceps','abs']],['Posterior',['back','traps','forearms','hamstrings','glutes','calves']],
-  ['Arms',['biceps','triceps','forearms']],['Chest & Back',['chest','back']],['Shoulders & Arms',['shoulders','biceps','triceps']]];
-const DEFAULT_WEEK = [['chest','shoulders','triceps'],['back','biceps','forearms','traps'],['quads','hamstrings','glutes','calves','abs'],[],['chest','back','shoulders','biceps','triceps','traps'],['quads','hamstrings','glutes','calves','abs'],[]];
-const UPPER_M = ['chest','back','shoulders','biceps','triceps','forearms','traps'];
+const CM_REGION = {}; CM_GROUPS.forEach(([r, l]) => l.forEach(([k]) => CM_REGION[k] = r));
+const MUSCLE_SLOTS = {upperChest:[['chestIncline',1]], midChest:[['chestPress',1]], lowerChest:[['chestFly',1]],
+  lats:[['vPull',1],['latIso',2]], upperback:[['hRow',1]], traps:[['traps',1]], lowerback:[['lowerBack',1]],
+  frontDelt:[['ohp',1]], sideDelt:[['sideDelt',1]], rearDelt:[['rearDelt',1]],
+  biceps:[['biLong',1]], triceps:[['triOH',1],['triPush',1]], brachio:[['biHammer',1]], flexors:[['flexors',1]], extensors:[['extensors',1]],
+  quads:[['quadIso',1],['squat',1],['legPress',2]], hamstrings:[['hamCurl',1],['hinge',1]], glutes:[['glute',1]], adductors:[['adductors',1]], abductors:[['abductors',1]],
+  calves:[['calves',1]], tibialis:[['tibialis',1]], abs:[['abs',1]], obliques:[['obliques',1]], neck:[['neck',1]]};
+const DAY_TEMPLATES = [
+  ['Push',['upperChest','lowerChest','sideDelt','triceps']],
+  ['Pull',['lats','upperback','traps','rearDelt','biceps','brachio']],
+  ['Legs',['quads','hamstrings','glutes','adductors','calves','abs']],
+  ['Upper',['upperChest','lowerChest','lats','upperback','traps','sideDelt','rearDelt','biceps','triceps']],
+  ['Lower',['quads','hamstrings','glutes','adductors','abductors','calves','tibialis']],
+  ['Full Body',['upperChest','lats','upperback','sideDelt','biceps','triceps','quads','hamstrings']],
+  ['Anterior',['upperChest','lowerChest','sideDelt','biceps','triceps','quads','adductors','abs']],
+  ['Posterior',['lats','upperback','traps','rearDelt','lowerback','brachio','hamstrings','glutes','calves']],
+  ['Arms',['biceps','triceps','brachio','flexors','extensors']],
+  ['Chest & Back',['upperChest','midChest','lowerChest','lats','upperback']],
+  ['Shoulders & Arms',['frontDelt','sideDelt','rearDelt','biceps','triceps']]];
+const TPL = n => DAY_TEMPLATES.find(t => t[0] === n)[1].slice();
+const DEFAULT_WEEK = [TPL('Push'), TPL('Pull'), TPL('Legs'), [], TPL('Upper'), TPL('Lower'), []];
+// weeks saved before the sub-muscle update used whole regions: convert them
+const OLD_KEYS = {chest:['upperChest','lowerChest'], back:['lats','upperback'], shoulders:['sideDelt','rearDelt'], forearms:['brachio']};
+function normWeek(week){
+  return (week || DEFAULT_WEEK).map(ms => { const out = []; ms.forEach(m => (OLD_KEYS[m] || [m]).forEach(k => { if (CM_LABEL[k] && !out.includes(k)) out.push(k); })); return out; });
+}
+const UPPER_M = CM_GROUPS.slice(0, 4).flatMap(g => g[1].map(x => x[0])).concat(['neck']);
 function dayName(ms){
   if (!ms.length) return 'Rest';
   const t = DAY_TEMPLATES.find(([, l]) => l.length === ms.length && l.every(m => ms.includes(m)));
   if (t) return t[0];
-  const names = CUSTOM_MUSCLES.filter(([k]) => ms.includes(k)).map(([, l]) => l);
-  return names.length <= 3 ? names.join(' & ').replace(/ & (?=.* & )/g, ', ') : names.slice(0, 2).join(', ') + ' +' + (names.length - 2);
+  const regions = [...new Set(CUSTOM_MUSCLES.filter(([k]) => ms.includes(k)).map(([k]) => CM_REGION[k]))];
+  if (regions.length === 1) { const names = CUSTOM_MUSCLES.filter(([k]) => ms.includes(k)).map(([, l]) => l); return names.length <= 2 ? names.join(' & ') : regions[0]; }
+  return regions.length <= 3 ? regions.join(' & ').replace(/ & (?=.* & )/g, ', ') : regions.slice(0, 2).join(', ') + ' +' + (regions.length - 2);
+}
+const SHORT = {'Full Body':'Full', Anterior:'Ant.', Posterior:'Post.', 'Chest & Back':'Ch·Bk', 'Shoulders & Arms':'Sh·Ar'};
+const REGION_SHORT = {Chest:'Ch', Back:'Bk', Shoulders:'Sh', Arms:'Ar', Legs:'Lg', 'Core & neck':'Co'};
+/** short label for the 7-day strip */
+function dayShort(ms){
+  const n = dayName(ms);
+  if (DAY_TEMPLATES.some(t => t[0] === n) || n === 'Rest') return SHORT[n] || n;
+  return [...new Set(CUSTOM_MUSCLES.filter(([k]) => ms.includes(k)).map(([k]) => REGION_SHORT[CM_REGION[k]]))].join('·');
 }
 function customDays(week){
   const out = [];
-  week.forEach((ms, wd) => {
+  normWeek(week).forEach((ms, wd) => {
     if (!ms.length) return;
-    const upperOnly = ms.every(m => UPPER_M.includes(m)), legsOnly = ms.every(m => !UPPER_M.includes(m));
-    const order = legsOnly ? ['calves','quads','hamstrings','glutes','abs'] : CUSTOM_MUSCLES.map(([k]) => k);
+    const legsOnly = ms.every(m => !UPPER_M.includes(m));
+    const order = legsOnly ? ['calves','tibialis','quads','adductors','abductors','hamstrings','glutes','abs','obliques'] : CUSTOM_MUSCLES.map(([k]) => k);
     let slots = [];
-    order.filter(m => ms.includes(m)).forEach(m => slots = slots.concat(MUSCLE_SLOTS[m]));
-    // chest pressing already hammers the front delts: no overhead press on the same day
-    if (ms.includes('chest')) slots = slots.filter(([s]) => s !== 'ohp');
-    // max 2 chest movements a session, unless it's a dedicated chest day
-    if (ms.length > 2) slots = slots.filter(([s]) => s !== 'chestPress');
-    // few muscles in the day = room for more work on each (bro-split style)
-    if (ms.length <= 3) {
+    order.filter(m => ms.includes(m)).forEach(m => slots = slots.concat(MUSCLE_SLOTS[m] || []));
+    // few parts in the day = room for a 2nd movement on each (bro-split style)
+    if (ms.length <= 4) {
       if (ms.includes('biceps')) slots.push(['biLong', 2]);
-      if (ms.includes('shoulders')) slots.push(['sideDelt', 2]);
-      if (ms.includes('back')) slots.push(['traps', 3]);
+      if (ms.includes('sideDelt')) slots.push(['sideDelt', 2]);
+      if (ms.includes('upperback')) slots.push(['hRow', 2]);
     }
-    if (!upperOnly && !legsOnly) slots.sort((a, b) => a[1] - b[1]);   // mixed days: core moves first
+    if (!legsOnly && ms.some(m => !UPPER_M.includes(m))) slots.sort((a, b) => a[1] - b[1]);   // mixed days: core moves first
     out.push({key:'c' + wd, name:dayName(ms), weekday:wd, raw:slots});
   });
   return out;
 }
-
 function splitOf(u){
   if (u.split === 'custom') return {id:'custom', name:'Custom split', why:'Your own week.', custom:true};
   const list = SPLITS[u.days] || SPLITS[4]; return list.find(s => s.id === u.split) || list[0];
@@ -256,21 +302,31 @@ function weeklySets(plan, u){
   return w;
 }
 
-/* ---------- week coach: overlap, recovery and frequency tips ---------- */
-// What else a muscle's training hits hard, and why (used for back-to-back day warnings).
+/* ---------- week coach: overlap, recovery and frequency tips (sub-muscle level) ---------- */
+const CHESTS = ['upperChest','midChest','lowerChest'];
+// what training X also hits hard (warn when it's trained the very next day)
 const INDIRECT = {
-  back:      {biceps:'rows and pulldowns already hammer your biceps', forearms:'your grip worked through every pull'},
-  chest:     {triceps:'every press already works your triceps', shoulders:'pressing hits your front delts hard'},
-  shoulders: {triceps:'overhead pressing works your triceps'},
-  quads:     {glutes:'squats and leg press hit your glutes'},
-  hamstrings:{glutes:'hinges load your glutes'},
-  glutes:    {hamstrings:'hip thrusts and hinges overlap with your hamstrings'}
+  lats:      {biceps:'pulldowns already hammer your biceps', brachio:'every pull loads your brachioradialis', flexors:'your grip worked through every pull'},
+  upperback: {biceps:'rows already work your biceps', rearDelt:'rows hit your rear delts hard', brachio:'rows load your brachioradialis'},
+  upperChest:{triceps:'every press works your triceps', frontDelt:'incline pressing hits your front delts hard'},
+  midChest:  {triceps:'every press works your triceps', frontDelt:'pressing hits your front delts'},
+  lowerChest:{triceps:'dips and presses work your triceps'},
+  frontDelt: {triceps:'overhead pressing works your triceps'},
+  traps:     {upperback:'shrugs and rows share the mid-back'},
+  quads:     {glutes:'squats and leg press hit your glutes', adductors:'deep squats load your adductors'},
+  hamstrings:{glutes:'hinges load your glutes', lowerback:'RDLs work your lower back'},
+  glutes:    {hamstrings:'hip thrusts and hinges overlap with your hamstrings'},
+  lowerback: {hamstrings:'back extensions work your hamstrings'}
 };
-// small muscle trained the day BEFORE the big lift that needs it
-const LIMITS = {biceps:{back:'tired biceps give out before your back on rows and pulldowns'}, forearms:{back:'a fried grip cuts your pulls short'},
-  triceps:{chest:'tired triceps cut your presses short', shoulders:'tired triceps cut your overhead presses short'}};const SMALL_FAST = ['calves','abs','forearms'];
-function analyzeWeek(week){
-  const tips = [], D = i => WEEKDAYS[i], L = m => CM_LABEL[m];
+// small part trained the day BEFORE the big lift that needs it
+const LIMITS = {biceps:{lats:'tired biceps give out before your lats on pulldowns', upperback:'tired biceps cut your rows short'},
+  brachio:{lats:'tired forearms cut your pulls short', upperback:'tired forearms cut your rows short'}, flexors:{lats:'a fried grip cuts your pulls short', upperback:'a fried grip cuts your rows short'},
+  triceps:{upperChest:'tired triceps cut your presses short', midChest:'tired triceps cut your presses short', frontDelt:'tired triceps cut your overhead presses short'},
+  lowerback:{hamstrings:'a tired lower back limits your RDLs', quads:'a tired lower back limits heavy squats'}};
+const SMALL_FAST = ['calves','tibialis','abs','obliques','brachio','flexors','extensors','neck','abductors'];
+const GROUP_OF = m => CHESTS.includes(m) ? 'chest' : ['lats','upperback'].includes(m) ? 'back' : ['frontDelt','sideDelt','rearDelt'].includes(m) ? 'shoulders' : m;
+function analyzeWeek(weekIn){
+  const week = normWeek(weekIn), tips = [], D = i => WEEKDAYS[i], L = m => CM_LABEL[m];
   const trainDays = week.map((ms, i) => ms.length ? i : -1).filter(i => i >= 0);
   if (!trainDays.length) return [{t:'warn', msg:'Pick at least one training day.'}];
   for (let i = 0; i < 7; i++) {
@@ -283,23 +339,28 @@ function analyzeWeek(week){
         return;
       }
       A.forEach(a => { const why = INDIRECT[a] && INDIRECT[a][m];
-        if (why) tips.push({t:'warn', msg:`${L(m)} on ${D(j)} right after ${L(a).toLowerCase()} on ${D(i)}: ${why}, so expect session overlap and weaker numbers. Train them together or put a day between.`}); });
+        if (why) tips.push({t:'warn', msg:`${L(m)} on ${D(j)} right after ${L(a).toLowerCase()} on ${D(i)}: ${why}, so expect overlap and weaker numbers. Train them together or put a day between.`}); });
       A.forEach(a => { const why = LIMITS[a] && LIMITS[a][m];
         if (why) tips.push({t:'warn', msg:`${L(a)} on ${D(i)} then ${L(m).toLowerCase()} on ${D(j)}: ${why}. Swap the order or train them together.`}); });
     });
   }
   week.forEach((ms, i) => {
-    if (ms.includes('back') && ms.includes('biceps')) tips.push({t:'good', msg:`${D(i)}: back + biceps together is a good pairing. Biceps are already warm and they recover on the same days.`});
-    if (ms.includes('chest') && ms.includes('triceps')) tips.push({t:'good', msg:`${D(i)}: chest + triceps together works well, the pressing overlap lands on one day.`});
-    if (ms.length >= 7) tips.push({t:'tip', msg:`${D(i)} trains ${ms.length} muscle groups: in one session each gets 1–2 exercises. Fine for full body, just keep it short and hard.`});
+    const has = k => ms.includes(k), chest = CHESTS.filter(has);
+    if ((has('lats') || has('upperback')) && has('biceps')) tips.push({t:'good', msg:`${D(i)}: back + biceps together is a good pairing. Biceps are already warm and they recover on the same days.`});
+    if (chest.length && has('triceps')) tips.push({t:'good', msg:`${D(i)}: chest + triceps together works well, the pressing overlap lands on one day.`});
+    if (chest.length && has('frontDelt')) tips.push({t:'tip', msg:`${D(i)}: chest pressing already hits your front delts hard, so direct front delt work the same day is usually wasted. Side and rear delts are the ones that need it.`});
+    if (chest.length >= 3) tips.push({t:'tip', msg:`${D(i)}: three chest movements in one session is a lot when every set goes to failure. Two is usually plenty.`});
+    if (ms.length >= 10) tips.push({t:'tip', msg:`${D(i)} trains ${ms.length} parts: each gets 1–2 sets. Fine, just keep it short and hard.`});
   });
-  const freq = m => week.filter(ms => ms.includes(m)).length;
-  ['chest','back','shoulders','quads','hamstrings','biceps','triceps'].forEach(m => {
-    const n = freq(m);
-    if (!n) tips.push({t:'warn', msg:`No ${L(m).toLowerCase()} this week. Add it to a day${m === 'biceps' || m === 'triceps' ? ' (pulls/presses hit it a bit, but not enough)' : ''}.`});
-    else if (n === 1) tips.push({t:'tip', msg:`${L(m)} once a week: fine if every set goes to failure, but twice a week usually grows faster.`});
-    else if (n >= 3) tips.push({t:'tip', msg:`${L(m)} ${n} times a week: the plan keeps it under 10 hard sets a week, so expect 1–2 sets each session. Every set to failure, no junk volume.`});
+  const freq = g => week.filter(ms => ms.some(m => GROUP_OF(m) === g)).length;
+  [['chest','chest'],['back','back (lats or upper back)'],['shoulders','delts'],['quads','quads'],['hamstrings','hamstrings'],['biceps','biceps'],['triceps','triceps']].forEach(([g, name]) => {
+    const n = freq(g);
+    if (!n) tips.push({t:'warn', msg:`No ${name} this week. Add it to a day.`});
+    else if (n === 1) tips.push({t:'tip', msg:`${name[0].toUpperCase() + name.slice(1)} once a week: fine if every set goes to failure, but twice a week usually grows faster.`});
+    else if (n >= 3) tips.push({t:'tip', msg:`${name[0].toUpperCase() + name.slice(1)} ${n} times a week: the plan keeps it under 10 hard sets a week, so expect 1–2 sets each session.`});
   });
+  if (!week.some(ms => ms.includes('sideDelt'))) tips.push({t:'tip', msg:'No side delts this week. They make your shoulders look wider and barely get hit by pressing.'});
+  if (!week.some(ms => ms.includes('rearDelt'))) tips.push({t:'tip', msg:'No rear delts this week. Rows help a bit, but a reverse fly keeps your shoulders balanced.'});
   let run = 0, best = 0; for (let k = 0; k < 14; k++) { if (week[k % 7].length) { run++; best = Math.max(best, run); } else run = 0; }
   if (trainDays.length === 7) tips.push({t:'warn', msg:'No rest day. Even with low volume, take at least one full day off a week.'});
   else if (best >= 4) tips.push({t:'tip', msg:`${Math.min(best, 7)} training days in a row: watch your performance late in the streak, a rest day in the middle helps.`});
@@ -308,14 +369,14 @@ function analyzeWeek(week){
 }
 /* ---------- onboarding ---------- */
 let OB = null;
-const PLAN_VERSION = 5;
+const PLAN_VERSION = 6;
 function startOnboarding(fromSettings){
   const p = S.food.profile, u = S.user || {};
   OB = {step:0, fromSettings:!!fromSettings, picks:{}, pickIdx:0,
     d:{name:u.name || '', goals:u.goals || [], sex:p.sex || 'm', age:p.age || 25, height:p.height || 178, weight:(S.body.weights.length ? S.body.weights[S.body.weights.length - 1].kg : p.weight) || 75,
        hUnit:u.hUnit || 'cm', wUnit:u.wUnit || 'kg', nGoal:p.goal || 'maintain', activity:p.activity || 1.55,
        exp:u.exp || 'intermediate', days:u.days || 4, split:u.split || '', style:u.style || 'hard2', reps:u.reps || 'heavy',
-       session:u.session || 60, equip:u.equip || 'full', focus:u.focus || [], replace:true, week:(u.week || DEFAULT_WEEK).map(x => x.slice())}};
+       session:u.session || 60, equip:u.equip || 'full', focus:u.focus || [], replace:true, week:normWeek(u.week)}};
   OB.calDay = 0;
   let el = $('#ob');
   if (!el) { el = document.createElement('div'); el.id = 'ob'; document.body.appendChild(el); }
@@ -390,10 +451,10 @@ function drawOB(){
   } else if (step === 'calendar') {
     const W = d.week, cd = OB.calDay, ms = W[cd], tips = analyzeWeek(W);
     h += `<h1>Build your week</h1><p class="muted">Tap a day, then pick a quick template or the exact muscles.</p><div class="cal">` +
-      W.map((m, i) => `<button class="cal-day ${i === cd ? 'on' : ''} ${m.length ? '' : 'rest'}" data-cal="${i}"><b>${WEEKDAYS[i]}</b><span>${esc(dayName(m))}</span></button>`).join('') +
+      W.map((m, i) => `<button class="cal-day ${i === cd ? 'on' : ''} ${m.length ? '' : 'rest'}" data-cal="${i}"><b>${WEEKDAYS[i]}</b><span>${esc(dayShort(m))}</span></button>`).join('') +
       `</div><div class="card" style="margin-top:10px"><b>${WEEKDAY_FULL[cd]}: ${esc(dayName(ms))}</b>
         <div class="pills" style="margin:8px 0">${[['Rest', []]].concat(DAY_TEMPLATES).map(([n, l]) => `<button class="pill ${dayName(ms) === n ? 'on' : ''}" data-tpl="${esc(n)}">${esc(n)}</button>`).join('')}</div>
-        <div class="row" style="align-items:flex-start;gap:8px"><div class="chips grow">${CUSTOM_MUSCLES.map(([k, l]) => `<button class="chip mchip ${ms.includes(k) ? 'hot' : ''}" data-mus="${k}">${ms.includes(k) ? '✓ ' : '+ '}${l}</button>`).join('')}</div>
+        <div class="row" style="align-items:flex-start;gap:8px"><div class="grow">${CM_GROUPS.map(([r, list]) => `<div class="muted tiny bold" style="margin:8px 0 2px;text-transform:uppercase;letter-spacing:.5px">${r}</div><div class="chips" style="margin-top:0">${list.map(([k, l]) => `<button class="chip mchip ${ms.includes(k) ? 'hot' : ''}" data-mus="${k}">${ms.includes(k) ? '✓ ' : '+ '}${l}</button>`).join('')}</div>`).join('')}</div>
         ${miniBody([].concat(...ms.map(m => MUSCLE_KEYS[m] || [])), 170, [].concat(...(W[(cd + 6) % 7] || []).map(m => MUSCLE_KEYS[m] || [])))}</div>
         ${(W[(cd + 6) % 7] || []).length ? `<div class="muted tiny" style="margin-top:6px">Bright = ${WEEKDAYS[cd]}. Faded = ${WEEKDAYS[(cd + 6) % 7]} (yesterday), so you can spot overlap.</div>` : ''}</div>
       <div class="sec">Coach's notes</div>` +
@@ -414,7 +475,7 @@ function drawOB(){
     const plan = buildPlan(d), ws = weeklySets(plan, d), sp = splitOf(d);
     h += `<h1>${esc(sp.name)}</h1><p class="muted">${sp.custom ? 'Your week, as you laid it out.' : sp.why + ' ' + SCHEDULE[d.days] + (plan.length < d.days ? ', repeating the rotation' : '') + '.'}</p>` +
       plan.map((day, i) => `<div class="card"><div class="item"><b>${day.weekday != null ? WEEKDAYS[day.weekday] + ' · ' : ''}${esc(day.name)}</b><span class="muted small">~${day.minutes} min</span></div><div class="row" style="align-items:flex-start;gap:8px"><div class="chips grow">${day.slots.map(x => `<span class="chip ${x.focus ? 'hot' : ''}">${esc(SLOTS[x.slot].label)} · ${x.sets}×${x.reps}</span>`).join('')}</div>${miniBody([].concat(...day.slots.map(x => SLOT_KEYS[x.slot] || [])), 96)}</div></div>`).join('') +
-      `<div class="sec">Hard sets per muscle per week</div><div class="chips">${Object.entries(ws).map(([m, n]) => `<span class="chip">${MUSCLE_NAMES[m]} ${n}</span>`).join('')}</div>
+      `<div class="sec">Hard sets per muscle per week</div><div class="chips">${Object.entries(ws).map(([m, n]) => `<span class="chip">${MUSCLE_NAMES[m] || {adductors:'Adductors', tibialis:'Tibialis', neck:'Neck'}[m] || m} ${n}</span>`).join('')}</div>
       <p class="muted small">Low volume on purpose: capped at 10 hard sets per muscle a week, and every set goes to failure. Next you pick a movement for each slot. Not sure? ★ is the pick.</p>
       <button class="ghost wide" data-ob="auto">Pick everything for me</button>`;
     next = 'Pick my movements';

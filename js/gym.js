@@ -22,15 +22,15 @@ const EX_LIB = {
     'Leg Extension','Romanian Deadlift','Stiff-Leg Deadlift','Single-Leg RDL','B-Stance RDL','Sumo Deadlift',
     'Trap Bar Deadlift','Lying Leg Curl','Seated Leg Curl','Nordic Curl','Reverse Nordic','Hip Thrust',
     'Smith Machine Hip Thrust','Glute Bridge','KAS Glute Bridge','Frog Pump','Cable Glute Kickback',
-    'Cable Pull-Through','Hip Abduction','Hip Adduction','Standing Calf Raise','Seated Calf Raise',
+    'Cable Pull-Through','Hip Abduction','Cable Hip Abduction','Banded Lateral Walk','Hip Adduction','Standing Calf Raise','Seated Calf Raise',
     'Leg Press Calf Raise','Tibialis Raise'],
   Arms: ['Bicep Curl','Barbell Curl','EZ Bar Curl','Incline Dumbbell Curl','Bayesian Curl','Cable Curl','Preacher Curl',
     'Machine Preacher Curl','Spider Curl','Drag Curl','Hammer Curl','Cross-Body Hammer Curl','Concentration Curl',
     'Reverse Curl','TNF Reverse Curl','Zottman Curl','Tricep Pushdown','Rope Pushdown','Overhead Cable Tricep Extension','Overhead Dumbbell Tricep Extension',
     'Katana Tricep Extension','Cross-Body Tricep Extension','Skull Crusher','Dumbbell Skull Crusher','JM Press',
-    'Tate Press','Tricep Kickback','Dips','Wrist Curl','Reverse Wrist Curl'],
+    'Tate Press','Tricep Kickback','Dips','Wrist Curl','Reverse Wrist Curl','Dumbbell Wrist Curl','Dumbbell Reverse Wrist Curl'],
   Core: ['Plank','Side Plank','Copenhagen Plank','Cable Crunch','Hanging Leg Raise','Hanging Knee Raise','Toes-to-Bar',
-    'Ab Wheel Rollout','Dragon Flag','Decline Sit-up','Dead Bug','Pallof Press','Russian Twist','Suitcase Carry',"Farmer's Carry"],
+    'Ab Wheel Rollout','Dragon Flag','Decline Sit-up','Dead Bug','Pallof Press','Cable Woodchopper','Russian Twist','Suitcase Carry',"Farmer's Carry"],
   Neck: ['Neck Curl','Neck Extension','Lateral Neck Flexion']
 };
 const DEFAULT_EX = Object.entries(EX_LIB).flatMap(([m, list]) => list.map(n => [n, m]));
@@ -261,7 +261,7 @@ function swapExercise(i){
   }, {full:true});
 }
 const POOL_NAMES = {upperChest:'Upper chest', midChest:'Mid chest', lowerChest:'Lower chest', lats:'Lats', upperback:'Upper back (thickness)', traps:'Traps', frontDelt:'Front delts', sideDelt:'Side delts', rearDelt:'Rear delts',
-  triOverhead:'Triceps long head (overhead)', triNormal:'Triceps (pushdown / press)', biceps:'Biceps', forearms:'Forearms', quads:'Quads', hamstrings:'Hamstrings', glutes:'Glutes', calves:'Calves', abs:'Abs'};
+  triOverhead:'Triceps long head (overhead)', triNormal:'Triceps (pushdown / press)', biceps:'Biceps', brachio:'Brachioradialis', flexors:'Forearm flexors', extensors:'Forearm extensors', lowerBack:'Lower back', adductors:'Adductors', abductors:'Abductors (glute med)', tibialis:'Tibialis', obliques:'Obliques', neck:'Neck', quads:'Quads', hamstrings:'Hamstrings', glutes:'Glutes', calves:'Calves', abs:'Abs'};
 
 /* ---------- history ---------- */
 VIEWS['gym/history'] = {render(){
