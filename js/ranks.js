@@ -169,7 +169,7 @@ function bodySvg(parts, fill, clickable, vb){
 
 VIEWS['gym/ranks'] = {render(){
   const R = computeRanks(), O = overallRank(R), bw = bodyweight(), total = Object.keys(UNITS).length;
-  let h = `<div class="card" style="text-align:center"><div class="muted small">Overall</div>
+  let h = friendsCard() + `<div class="card" style="text-align:center"><div class="muted small">Overall</div>
       <div style="font-size:26px;font-weight:900;color:${O ? TIERS[O.tier < 0 ? 0 : O.tier].c : 'var(--muted)'}">${O ? (O.tier < 0 ? 'Unranked' : TIERS[O.tier].n) : 'Unranked'}</div>
       <div class="muted small">${O ? O.n + ' of ' + total + ' muscles ranked' : 'Log some workouts to get ranked'} · at ${r1(bw)} kg bodyweight</div></div>
     <div class="bodies"><div><div class="muted tiny" style="text-align:center">FRONT</div>${bodySvg(BODY_FRONT, R)}</div><div><div class="muted tiny" style="text-align:center">BACK</div>${bodySvg(BODY_BACK, R)}</div></div>

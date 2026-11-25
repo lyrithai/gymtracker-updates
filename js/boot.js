@@ -13,7 +13,7 @@
     '<button data-act="tab" data-tab="gym"><svg viewBox="0 0 24 24"><path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/></svg>Gym</button>' +
     '<button data-act="tab" data-tab="life"><svg viewBox="0 0 24 24"><path d="M9 11l2 2 4-4"/><rect x="4" y="4" width="16" height="16" rx="3"/></svg>Life</button>' +
     '</nav><div id="toast"></div>');
-  var files = ['lib/zxing.min.js', 'js/core.js', 'js/gym.js', 'js/food.js', 'data/recipes.js', 'js/recipes.js', 'js/life.js', 'js/schedule.js', 'js/ranks.js', 'js/program.js', 'js/update.js', 'js/main.js'];
+  var files = ['lib/zxing.min.js', 'js/core.js', 'js/gym.js', 'js/food.js', 'data/recipes.js', 'js/recipes.js', 'js/life.js', 'js/schedule.js', 'js/ranks.js', 'js/program.js', 'js/update.js', 'js/cloud.js', 'js/friends.js', 'js/main.js'];
   var i = 0;
   (function next(){
     if (i >= files.length) { window.BOOT_OK = true; return; }

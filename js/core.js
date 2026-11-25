@@ -80,7 +80,7 @@ function load(){
 }
 let S;  // assigned in main.js after gym.js defines seedGym()
 let saveT = 0;
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) { toast('Could not save! Storage full?'); } }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) { toast('Could not save! Storage full?'); } if (window.onSaved) window.onSaved(); }
 window.saveNow = save;
 
 function toast(msg){
@@ -217,18 +217,20 @@ window.addEventListener('resize', () => { const V = VIEWS[viewKey()]; if (V && V
 /* ---------- settings + backup ---------- */
 ACTIONS.settings = () => openSheet((b, sh) => {
   html(b, `<h2>Settings</h2>
+    ${accountHtml()}
     <div class="sec">Weight unit (gym)</div>
     <div class="seg"><button data-u="kg" class="${S.unit === 'kg' ? 'on' : ''}">Kilograms (kg)</button><button data-u="lb" class="${S.unit === 'lb' ? 'on' : ''}">Pounds (lb)</button></div>
     <div class="sec">Your plan</div>
     <button class="secondary wide" data-redo>Redo setup (goals, body, training split)</button>
     <button class="secondary wide" data-goals>Calories & macro targets</button>
     <div class="sec">Backup</div>
-    <div class="muted small" style="margin-bottom:8px">Everything lives only on this phone. Copy a backup now and then and keep it somewhere safe (notes app, email to yourself), especially before you uninstall or switch phones.</div>
+    <div class="muted small" style="margin-bottom:8px">${A ? 'Your account keeps a copy too.' : 'Everything lives only on this phone.'} Copy a backup now and then and keep it somewhere safe (notes app, email to yourself), especially before you uninstall or switch phones.</div>
     <button class="secondary wide" id="bcopy">Copy backup</button>
     <div class="sec">Restore</div>
     <textarea id="bin" class="mono" placeholder="Paste a backup here"></textarea>
     <button class="secondary wide" id="brestore">Restore from backup</button>
     <div class="muted small" style="margin-top:16px;text-align:center">${S.workouts.length} workouts · ${Object.keys(S.food.log).length} food days · ${S.todos.length} to-dos<br>Food data: UK McCance & Widdowson (Crown copyright, OGL) and Open Food Facts (ODbL)<br>${window.appVersionText ? esc(appVersionText()) : ''}</div>`);
+  accountButtons(b, sh);
   on(b, '[data-u]', btn => { S.unit = btn.dataset.u; save(); sh.refresh(); render(); });
   on(b, '[data-goals]', () => openTargets());
   on(b, '[data-redo]', () => { closeSheet(); startOnboarding(true); });

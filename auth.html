@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><meta name="referrer" content="no-referrer"><title>Gym Tracker login</title>
+<style>body{margin:0;background:#0f1115;color:#f4f6fa;font:16px/1.5 system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center}main{padding:24px;max-width:340px}a{display:block;background:#a3e635;color:#0f1115;font-weight:800;text-decoration:none;border-radius:14px;padding:16px;margin-top:20px}</style></head>
+<body><main><h1>Almost there</h1><p id="m">Taking you back to Gym Tracker…</p><a id="b" hidden>Open Gym Tracker</a></main>
+<script>
+(function(){
+  var q = location.search, state = new URLSearchParams(q).get('state'), p = null;
+  try { p = JSON.parse(localStorage.getItem('gymtracker.authp')); } catch(e) {}
+  if (p && p.state && p.state === state) {        // started from the web / iPhone version
+    localStorage.setItem('gymtracker.authr', JSON.stringify(location.href));
+    location.replace('./'); return;
+  }
+  if (/Android/.test(navigator.userAgent) && state) {   // started from the Android app: hand it back
+    var u = 'gymtracker://auth' + q, b = document.getElementById('b');
+    b.href = u; b.hidden = false; location.href = u; return;
+  }
+  document.getElementById('m').textContent = 'This login did not start here. Go back to Gym Tracker and try again, or log in with your email.';
+})();
+</script></body></html>

@@ -324,7 +324,7 @@ function openScanner(onFood){
   const sh = openSheet(b => {
     html(b, `<h2>Scan a barcode or QR code</h2>
       <div class="scan-box"><video id="svid" playsinline muted></video><div class="aim"></div></div>
-      <div class="muted small" style="text-align:center;margin:8px 0" id="smsg">Point the camera at a food barcode, or a recipe QR code from a friend</div>
+      <div class="muted small" style="text-align:center;margin:8px 0" id="smsg">Point the camera at a food barcode, or a recipe or friend QR code</div>
       <label class="f">Or type the barcode number</label>
       <div class="row"><input class="text-in grow" id="scode" inputmode="numeric" placeholder="e.g. 5000159484695"><button class="secondary" id="sgo" style="min-width:70px">Find</button></div>`);
     on(b, '#sgo', () => { const v = b.querySelector('#scode').value.trim(); if (v) handle(v); });
@@ -335,6 +335,7 @@ function openScanner(onFood){
     if (done) return; done = true;
     try { reader && reader.reset(); } catch(e) {}
     text = String(text).trim();
+    if (friendCode(text)) return;
     if (text.startsWith('GTR1:')) { closeSheet(); importRecipeCode(text); return; }
     const m = text.match(/openfoodfacts\.org\/product\/(\d{8,14})/);
     const code = m ? m[1] : (/^\d{8,14}$/.test(text) ? text : null);

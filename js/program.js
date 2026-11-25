@@ -433,7 +433,7 @@ function drawOB(){
   let next = 'Next', canNext = true;
   if (step === 'welcome') {
     h += `<div class="ob-hero">💪</div><h1>Let's build your plan</h1><p class="muted">No junk volume. Fewer sets, taken to failure, on movements that actually hit the muscle, and you beat the logbook every week. A few questions and it's built around you.</p>
-      <label class="f">What should we call you? (optional)</label><input class="text-in" data-in="name" value="${esc(d.name)}" placeholder="Your name">`;
+      <label class="f">What should we call you? (optional)</label><input class="text-in" data-in="name" value="${esc(d.name)}" placeholder="Your name">${A ? '' : '<button class="ghost wide" data-ob="login">I already have an account</button>'}`;
     next = 'Let\'s go';
   } else if (step === 'goals') {
     h += `<h1>What are you here for?</h1><p class="muted">Pick everything that fits.</p>` +
@@ -570,6 +570,7 @@ function drawOB(){
       const it = pickList()[OB.pickIdx], pool = SLOTS[it.x.slot].pool;
       editExercise(null, {pool, onDone:e => { if (!OB) return; if (e.pools.includes(pool)) OB.picks[it.id] = e.name; drawOB(); }});
     }
+    else if (a === 'login') openLogin(false);
     else if (a === 'auto') { OB.step = OB_STEPS.indexOf('done'); drawOB(); el.scrollTop = 0; }
     else if (a === 'next') {
       if (step === 'pick') {
