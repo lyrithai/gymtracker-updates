@@ -4,7 +4,7 @@ const SNACK_TASTES = [['any','Anything'],['sweet','🍓 Sweet'],['savoury','🥓
 let snkTaste = 'any', snkPage = 0;
 /** What's left for a snack now: today's targets minus what's logged, minus room kept for main meals you haven't had yet. */
 function snackRoom(dk){
-  const T = S.food.targets, {t} = dayTotals(dk), has = m => dayEntries(dk).some(e => e.meal === m), h = new Date().getHours() + new Date().getMinutes() / 60;
+  const T = targetsOn(dk), {t} = dayTotals(dk), has = m => dayEntries(dk).some(e => e.meal === m), h = new Date().getHours() + new Date().getMinutes() / 60;
   const ahead = dk > today() ? [['breakfast', .25], ['lunch', .3], ['dinner', .35]] : dk < today() ? [] : [['breakfast', .25, 11], ['lunch', .3, 15], ['dinner', .35, 21.5]].filter(([m, , till]) => h < till);
   const keep = ahead.filter(([m]) => !has(m)), part = keep.reduce((a, x) => a + x[1], 0);
   const left = {kcal:T.kcal - t[0], protein:T.protein - t[1], carbs:T.carbs - t[2], fat:T.fat - t[3]};

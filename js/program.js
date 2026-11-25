@@ -34,7 +34,7 @@ const POOLS = {
     ['Cross-Body Hammer Curl','d',''],['Zottman Curl','d','Curl up palms-up, lower palms-down']],
   flexors: [['Wrist Curl','b','Forearm flexors, palms up'],['Dumbbell Wrist Curl','d',''],["Farmer's Carry",'d','Grip and flexors under load']],
   extensors: [['Reverse Wrist Curl','b','Forearm extensors, palms down'],['Dumbbell Reverse Wrist Curl','d',''],['Reverse Curl','b','']],
-  lowerBack: [['45° Back Extension','m','Erectors with hamstrings and glutes'],['Back Extension','w',''],['Good Morning','b',''],['Jefferson Curl','b','Light and slow, spine through flexion']],
+  lowerBack: [['45° Back Extension','m','Erectors with hamstrings and glutes'],['Stiff-Leg Deadlift','b','Lower back, with hamstrings and glutes'],['Back Extension','w',''],['Good Morning','b',''],['Jefferson Curl','b','Light and slow, spine through flexion']],
   adductors: [['Hip Adduction','m','Inner thighs, easy to load'],['Copenhagen Plank','w','Bodyweight adductor killer']],
   abductors: [['Hip Abduction','m','Glute med, side of the hip'],['Cable Hip Abduction','m',''],['Banded Lateral Walk','w','']],
   tibialis: [['Tibialis Raise','w','Front of the shin, knee and ankle health']],
@@ -246,7 +246,7 @@ function repsFor(slot, u){
   return light ? (small ? '10-15' : '8-12') : (small ? '8-12' : '6-10');
 }
 /** Days -> [{key, name, weekday?, slots:[{slot, sets, reps, rest, effort}]}] fitted to the session length. */
-function buildPlan(u){
+function buildPlanRaw(u){   // sets.js has the final set counts
   const split = splitOf(u), style = STYLES[u.style] || STYLES.hard2;
   const focusOf = x => (u.focus || []).some(f => (FOCUS_OF[SLOTS[x.slot].m] || []).includes(f));
   const minutes = list => Math.round(5 + list.reduce((a, x) => a + x.sets * 2.5 + 1.5, 0));   // warm-up + ~2.5 min a hard set incl. rest + setup
@@ -256,11 +256,11 @@ function buildPlan(u){
       let sets = style.sets;
       if (style.sets === 1 && ['quadIso','calves','traps'].includes(slot)) sets = 2;   // the usual two-set exceptions
       if (style.sets === 3 && SLOTS[slot].small) sets = 2;
-      if (slot === 'triOH') sets = style.sets === 3 ? 2 : 1;   // overhead: 1-2 sets (long head at stretch is brutal)
+      if (slot === 'triOH') sets = 2;
       if (slot === 'triPush') sets = 2;                        // normal triceps move: 2 sets
-      return {slot, p, sets, reps:repsFor(slot, u), rest:SLOTS[slot].big ? 180 : 120, effort:slot === 'triOH' && sets === 1 ? 'one set to failure, add a 2nd if you feel fresh' : style.effort};
+      return {slot, p, sets, reps:repsFor(slot, u), rest:SLOTS[slot].big ? 180 : 120, effort:style.effort};
     });
-    list.forEach(x => { if (focusOf(x)) { x.sets += 1; x.focus = true; } });
+    list.forEach(x => { if (focusOf(x)) { x.focus = true; } });
     // priority muscles first (but calves and leg extensions keep opening leg days)
     const opener = x => (x.slot === 'calves' || x.slot === 'quadIso') && list.indexOf(x) < 2;
     list = list.filter(opener).concat(list.filter(x => !opener(x) && x.focus), list.filter(x => !opener(x) && !x.focus));
@@ -291,8 +291,8 @@ const CAP_GROUP = {lats:'back', upperback:'back'};
 function capWeekly(days, u, focusOf){
   const per = u.split === 'custom' ? 1 : (u.days || days.length) / days.length;
   const grp = x => CAP_GROUP[SLOTS[x.slot].m] || SLOTS[x.slot].m;
-  const minSets = x => x.slot === 'triOH' ? 1 : x.slot === 'triPush' ? 2 : 1;
-  const stuck = new Set();   // groups that can't go lower (e.g. the triceps 1+2 rule)
+  const minSets = () => 2;
+  const stuck = new Set(['shoulders']);   // owner: shoulders recover well, extra volume is fine   // groups that can't go lower (e.g. the triceps 1+2 rule)
   for (let guard = 0; guard < 300; guard++) {
     const w = {}, foc = {};
     days.forEach(d => d.slots.forEach(x => { w[grp(x)] = (w[grp(x)] || 0) + x.sets * per; if (x.focus) foc[grp(x)] = true; }));
@@ -311,7 +311,6 @@ function capWeekly(days, u, focusOf){
     let cand = null;
     days.forEach(d => d.slots.forEach(x => { if (grp(x) === g && x.sets > minSets(x) && (!cand || x.sets > cand.sets)) cand = x; }));
     if (cand) { cand.sets--; continue; }
-    if (best) { best.d.slots.splice(best.i, 1); continue; }
     stuck.add(g);
   }
 }
@@ -395,7 +394,7 @@ function startOnboarding(fromSettings){
     d:{name:u.name || '', goals:u.goals || [], sex:p.sex || 'm', age:p.age || 25, height:p.height || 178, weight:(S.body.weights.length ? S.body.weights[S.body.weights.length - 1].kg : p.weight) || 75,
        hUnit:u.hUnit || 'cm', wUnit:u.wUnit || 'kg', nGoal:p.goal || 'maintain', activity:p.activity || 1.55,
        exp:u.exp || 'intermediate', days:u.days || 4, split:u.split || '', style:u.style || 'hard2', reps:u.reps || 'heavy',
-       session:u.session || 60, equip:u.equip || 'full', focus:u.focus || [], replace:true, week:normWeek(u.week)}};
+       session:u.session || 60, equip:u.equip || 'full', focus:u.focus || [], sets:Object.assign({}, u.sets), setMode:u.setMode || 'smart', replace:true, week:normWeek(u.week)}};
   OB.calDay = 0;
   let el = $('#ob');
   if (!el) { el = document.createElement('div'); el.id = 'ob'; document.body.appendChild(el); }
@@ -488,7 +487,7 @@ function drawOB(){
       Object.entries(STYLES).map(([k, s]) => choice('style', k, s.name, s.sub)).join('') +
       (d.exp === 'beginner' ? '' : `<label class="f">Rep ranges</label><div class="seg">${[['heavy','Heavy 6–10'],['moderate','Moderate 8–12']].map(([v, l]) => `<button data-k="reps" data-v="${v}" class="${d.reps === v ? 'on' : ''}">${l}</button>`).join('')}</div>`);
   } else if (step === 'focus') {
-    h += `<h1>Any muscles to bring up?</h1><p class="muted">Optional, up to 2. They go first in the session, when you're freshest, and get an extra set.</p>` +
+    h += `<h1>Any muscles to bring up?</h1><p class="muted">Optional, up to 2. They go first in the session, when you're freshest, and always keep both sets.</p>` +
       FOCUS.map(([v, l]) => choice('focus', v, l, '', true)).join('');
     canNext = d.focus.length <= 2;
     if (!canNext) h += `<div class="small" style="color:var(--danger)">Pick at most 2</div>`;
@@ -512,6 +511,7 @@ function drawOB(){
     h += `<div class="muted small">${OB.pickIdx + 1} of ${list.length} · ${esc(it.where.join(', '))}</div>
       <div class="row" style="align-items:center;gap:10px"><h1 class="grow">${esc(slot.label)}${nth ? ' (' + (nth === 1 ? '2nd' : '3rd') + ')' : ''}</h1>${miniBody(SLOT_KEYS[it.x.slot], 110)}</div>
       <p class="muted">${it.x.sets} × ${it.x.reps} reps, ${it.x.effort}. Pick whatever hits it best for you.${slot.m === 'chest' ? ' Presses and flies both work: fly-only chest is fine if presses beat up your shoulders or triceps.' : ''}</p>
+      <label class="f">How many sets?</label>${setPills(it.id, d, it.x.auto)}${it.x.by && d.setMode !== 'two' ? `<div class="muted small" style="margin:4px 0">Auto is 1 less because ${esc(it.x.by)} already hits it.</div>` : ''}<details style="margin:8px 0"><summary class="ghost" style="min-height:44px;display:flex;align-items:center">All movements: ${d.setMode === 'two' ? '2 for everything' : 'Smart'}</summary>${modePills(d)}</details>
       ${it.days.length > 1 ? `<div class="coach up">Pick once: used on all ${it.days.length} days.</div>` : ''}${sameDay.length ? `<div class="muted small" style="margin:-2px 0 10px">Already picked: ${[...new Set(sameDay)].map(esc).join(', ')}</div>` : ''}` +
       opts.map((o, i) => `<button class="ob-opt ${cur === o[0] ? 'on' : ''}" data-pick="${esc(o[0])}"><b>${i === 0 ? '★ ' : ''}${esc(o[0])}</b><span>${i === 0 ? 'Recommended' + (o[2] ? ' · ' + esc(o[2]) : '') : esc(o[2] || '')}</span></button>`).join('') +
       `<button class="ob-opt ${cur === '' ? 'on' : ''}" data-pick=""><b>Leave empty</b><span>Choose it during a workout instead</span></button>
@@ -522,7 +522,7 @@ function drawOB(){
     const sug = suggestTargets({sex:d.sex, age:d.age, height:d.height, weight:d.weight, activity:d.activity, goal:d.nGoal});
     h += `<h1>${d.name ? esc(d.name) + ', your' : 'Your'} plan is ready</h1>
       <div class="card"><b>The rules</b><div class="small" style="margin-top:6px;line-height:1.6">
-        • Max 10 hard sets per muscle a week. Every set is to failure, so more just piles on fatigue.<br>• Warm up with 1–2 quick ramp-up sets on your first lift. Save your energy for the working sets.<br>• Every working set: ${STYLES[d.style].effort}.<br>• Rest fully: about 3 minutes on big lifts, 2 on the rest. Longer rest means you need fewer sets.<br>
+        • 2 hard sets per movement, 1 when another movement that day already hits it. Front and side delts recover fast, so they always get at least 2.<br>• Warm up with 1–2 quick ramp-up sets on your first lift. Save your energy for the working sets.<br>• Every working set: ${STYLES[d.style].effort}.<br>• Rest fully: about 3 minutes on big lifts, 2 on the rest. Longer rest means you need fewer sets.<br>
         • Hit the top of the rep range on every set → add the smallest weight jump next time.<br>• Same weight for a few weeks is normal. Beat the logbook by a rep.<br>
         • Set every machine to your leverages: seat and pads so the target muscle hits a full stretch.<br>• Short on time? Finish the last set with myo-reps or a mechanical drop set instead of adding sets.<br>• Full control on the way down, same end point every rep. No ego.</div></div>
       <div class="card"><b>Daily food targets</b><div class="macro4"><div><b>${fmtNum(sug.kcal)}</b><span>kcal</span></div><div><b style="color:var(--p)">${sug.protein}</b><span>protein</span></div><div><b style="color:var(--c)">${sug.carbs}</b><span>carbs</span></div><div><b style="color:var(--f)">${sug.fat}</b><span>fat</span></div></div>
@@ -535,6 +535,7 @@ function drawOB(){
   }
   h += `</div><div class="ob-foot"><button class="primary wide" data-ob="next" ${canNext ? '' : 'disabled style="opacity:.4"'}>${next}</button></div>`;
   el.innerHTML = h;
+  bindSets(el, d, () => drawOB());
   el.querySelectorAll('[data-in]').forEach(i => i.oninput = () => { d[i.dataset.in] = i.value; });
   el.querySelectorAll('[data-num]').forEach(i => i.onchange = () => { const v = num(i.value); if (v != null) d[i.dataset.num] = v; drawOB(); });
   el.querySelectorAll('[data-ft]').forEach(i => i.onchange = () => {
@@ -595,7 +596,7 @@ function exIdByName(name){
 }
 function finishOnboarding(){
   const d = OB.d, plan = buildPlan(d), sp = splitOf(d);
-  S.user = {name:d.name.trim(), goals:d.goals, exp:d.exp, days:d.days, split:sp.id, week:d.week, style:d.style, reps:d.reps, session:d.session, equip:d.equip, focus:d.focus, picks:OB.picks,
+  S.user = {name:d.name.trim(), goals:d.goals, exp:d.exp, days:d.days, split:sp.id, week:d.week, style:d.style, reps:d.reps, session:d.session, equip:d.equip, focus:d.focus, picks:OB.picks, sets:d.sets, setMode:d.setMode, setsV:1,
     hUnit:d.hUnit, wUnit:d.wUnit, onboarded:true, planVer:PLAN_VERSION, at:Date.now()};
   S.food.profile = {sex:d.sex, age:d.age, height:Math.round(d.height), weight:r1(d.weight), activity:d.activity, goal:d.nGoal};
   S.food.targets = suggestTargets(S.food.profile);

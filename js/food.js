@@ -107,17 +107,17 @@ function dayTotals(dk){
 /* ---------- diary view ---------- */
 VIEWS['food/diary'] = {render(){
   foodDate = foodDate || today();
-  const T = S.food.targets, {t} = dayTotals(foodDate);
+  const T = targetsOn(foodDate), {t} = dayTotals(foodDate);
   const left = T.kcal - t[0];
   let h = `<div class="datebar"><button class="icon" data-act="fday" data-d="-1">‹</button><b>${dlabel(foodDate)}</b><button class="icon" data-act="fday" data-d="1">›</button></div>
     <div class="card sum">${ring(t[0], T.kcal, fmtNum(t[0]), left >= 0 ? fmtNum(left) + ' left' : fmtNum(-left) + ' over')}
     <div class="bars">${bar('Protein', t[1], T.protein, 'var(--p)')}${bar('Carbs', t[2], T.carbs, 'var(--c)')}${bar('Fat', t[3], T.fat, 'var(--f)')}</div></div>
     <div class="row" style="margin-bottom:12px"><button class="primary grow" data-act="food-add" data-meal="">＋ Add food</button><button class="secondary" data-act="scan" style="min-width:110px">▦ Scan</button></div>
-    <button class="secondary wide" data-act="snacks" style="margin:0 0 12px">🍿 Snack ideas that fit</button>`;
+    <div class="quick" style="margin-bottom:12px"><button class="secondary" data-act="typeit">⌨️ Type it</button><button class="secondary" data-act="foodtools">🧰 More ways</button></div>${S.food.flex ? `<button class="ghost small" style="margin:-6px 0 8px;padding:0" data-act="budget">Weekly budget: ${fmtNum(weekBudget().total - weekBudget().past - t[0])} kcal left this week</button>` : ''}`;
   MEALS.forEach(([m, label]) => {
     const es = dayEntries(foodDate).filter(e => e.meal === m);
     const kc = es.reduce((a, e) => { const f = foodFromCache(e.key); return a + (f ? kcalOf(f, e.g) : 0); }, 0);
-    h += `<div class="card"><div class="meal-h"><b>${label}</b><span class="row"><span class="muted small">${fmtNum(kc)} kcal</span><button class="icon" data-act="food-add" data-meal="${m}" aria-label="Add to ${label}">＋</button></span></div>`;
+    h += `<div class="card"><div class="meal-h"><b>${label}</b><span class="row"><span class="muted small">${fmtNum(kc)} kcal</span>${es.length ? `<button class="icon" data-act="meal-save" data-meal="${m}" aria-label="Save ${label} as a meal">☆</button>` : ''}<button class="icon" data-act="food-add" data-meal="${m}" aria-label="Add to ${label}">＋</button></span></div>`;
     es.forEach(e => {
       const f = foodFromCache(e.key);
       h += `<button class="entry" data-act="food-entry" data-id="${e.id}"><span class="grow"><div class="nm ellipsis">${esc(f ? f.name : 'Unknown food')}</div>
@@ -217,9 +217,9 @@ function tokensOf(q){ return norm(q).split(/[\s,]+/).filter(Boolean); }
 
 function openFoodSearch(opt){
   opt = opt || {};   // {meal, dk, onPick(food, g, label)}
-  let q = '', filter = 'all', web = null, webBusy = false, loading = false;
+  let q = opt.q || '', filter = 'all', web = null, webBusy = false, loading = false;
   openSheet((b, sh) => {
-    html(b, `<h2>${opt.onPick ? 'Add ingredient' : 'Add food'}</h2>
+    html(b, `<h2>${opt.onFood ? 'Choose a food' : opt.onPick ? 'Add ingredient' : 'Add food'}</h2>
       <div class="row"><input class="text-in grow" id="fq" placeholder="Search 155,000+ foods" value="${esc(q)}"><button class="secondary" id="fscan" style="min-width:56px">▦</button></div>
       <div class="pills" style="margin:8px 0">${[['all','All'],['recent','Recent'],['my','Mine & recipes'],['uk','UK shops'],['gen','Basic foods']].map(([k, l]) => `<button class="pill ${filter === k ? 'on' : ''}" data-f="${k}">${l}</button>`).join('')}</div>
       <div id="fres"></div>`);
@@ -234,7 +234,8 @@ function openFoodSearch(opt){
     on(b, '#fscan', () => openScanner(f => pick(f)));
     const res = b.querySelector('#fres');
     function pick(f){
-      if (opt.onPick) openFood(f, {onPick:(g, label) => { cacheFood(f); closeSheet(); opt.onPick(f, g, label); }});
+      if (opt.onFood) { cacheFood(f); closeSheet(); opt.onFood(f); }
+      else if (opt.onPick) openFood(f, {onPick:(g, label) => { cacheFood(f); closeSheet(); opt.onPick(f, g, label); }});
       else openFood(f, {meal:opt.meal, dk:opt.dk, after:() => closeSheet()});
     }
     function rows(list){
@@ -407,7 +408,7 @@ function editMyFood(m, opt){
 }
 VIEWS['food/mine'] = {render(){
   let h = `<div class="card"><div class="item"><span><b>Daily targets</b><div class="muted small">${fmtNum(S.food.targets.kcal)} kcal · P ${S.food.targets.protein} · C ${S.food.targets.carbs} · F ${S.food.targets.fat}</div></span>
-    <button class="ghost" data-act="targets">Edit</button></div></div>
+    <button class="ghost" data-act="targets">Edit</button></div></div>${adaptCard()}
     <button class="primary big-start" data-act="myfood-new">＋ Create a food</button>
     <div class="sec">My foods (${S.food.mine.length})</div>`;
   if (!S.food.mine.length) h += `<div class="muted small">Foods you add yourself (or that aren't in the database) show up here. Scanning an unknown barcode lets you add it.</div>`;

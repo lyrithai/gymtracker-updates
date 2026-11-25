@@ -51,7 +51,7 @@ VIEWS['recipes/browse'] = {render(){
     <div class="pills">${RTAGS.map(tg => `<button class="pill ${rTag === tg ? 'on' : ''}" data-act="rtag" data-t="${tg}">${tg}</button>`).join('')}</div>
     <div class="row between" style="margin:6px 0 10px"><span class="muted small">${pl(withCalc.length, 'recipe')}</span>
       <select data-field="rsort" style="width:auto;min-height:36px;font-size:13px">${[['popular','Sort: featured'],['cheap','Cheapest per meal'],['protein','Most protein'],['fast','Quickest']].map(([k, l]) => `<option value="${k}" ${rSort === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
-    <button class="secondary wide" data-act="recipe-new" style="margin:0 0 12px">＋ Make your own recipe</button>`;
+    <button class="secondary wide" data-act="recipe-new" style="margin:0 0 12px">＋ Make your own recipe</button><button class="secondary wide" data-act="kitchen" style="margin:0 0 12px">🧊 What can I make?</button>`;
   if (!withCalc.length) h += `<div class="empty">No recipes match. Try another filter.</div>`;
   withCalc.forEach(({r, c}) => {
     h += `<button class="rcard" data-act="recipe" data-id="${r.id}"><div class="item"><span class="t">${esc(r.name)}</span><span>${methodIcons(r)}</span></div>

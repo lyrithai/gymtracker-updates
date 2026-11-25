@@ -148,7 +148,8 @@ function startWorkout(name, items, rid){
 }
 function newEntry(exId, n, reps, rest, effort){
   const prev = lastSetsFor(exId);
-  const count = n || (prev ? prev.length : 2);
+  let count = n || (prev ? prev.length : 2);
+  if (deloadOn()) count = Math.max(1, count - 1);
   return {exId, reps:reps || '', rest:rest || 0, effort:effort || '', sets: Array.from({length: count}, () => ({w:null, r:null, done:false}))};
 }
 /** Double progression: reps first, then the smallest weight jump. */
@@ -156,7 +157,8 @@ function overloadHint(e){
   const m = String(e.reps || '').match(/(\d+)\s*-\s*(\d+)/); if (!m) return '';
   const prev = lastSetsFor(e.exId); if (!prev || !prev.length) return '';
   const top = +m[2], bottom = +m[1];
-  const w = Math.max(...prev.map(s => s.w || 0));
+  const w = Math.max(...prev.map(s => s.w || 0)), tank = prev.map(s => s.rir).filter(v => v != null);
+  if (tank.length && Math.min(...tank) >= 3 && prev.every(s => s.r >= bottom)) return `<div class="coach up">↑ You had ${Math.min(...tank)}+ left last time. Go up a notch today.</div>`;
   if (prev.every(s => s.r >= top)) return `<div class="coach up">↑ You hit ${top} on every set. Add the smallest weight jump today.</div>`;
   if (prev.some(s => s.r < bottom)) return `<div class="coach">Last time dipped under ${bottom} reps. Keep ${fmtW(w)} ${S.unit} and own the range.</div>`;
   return `<div class="coach">Same ${fmtW(w)} ${S.unit}. Beat last time by one rep. That's progress.</div>`;
@@ -201,6 +203,7 @@ VIEWS['gym/workout'] = {
         <button class="primary" style="min-height:44px" data-act="start-routine" data-id="${nx.r.id}">Start</button></div>
         <div class="chips">${nx.r.items.map(i => `<span class="chip">${esc(exName(i.exId))}</span>`).join('')}</div></div>`;
     else h += `<button class="card tap" data-act="onboard" style="color:var(--text)"><b>✨ Build me a program</b><div class="muted small">Answer a few questions and get a science-based split with movements you pick.</div></button>`;
+    h = deloadCard() + h + recoveryCard() + cardioCard();
     h += `<button class="secondary big-start" data-act="start-empty">＋ Start empty workout</button><div class="sec">Your routines</div>`;
     if (!S.routines.length) h += `<div class="card muted">No routines yet. Make one in Routines.</div>`;
     S.routines.forEach(r => {
@@ -218,13 +221,14 @@ VIEWS['gym/workout'] = {
 function viewActive(){
   const a = S.active;
   let h = `<div class="wo-head"><input class="wo-name" data-field="wo-name" value="${esc(a.name)}" aria-label="Workout name"><span class="timer" id="elapsed">${fmtDur(Date.now() - a.start)}</span></div>`;
+  if (a.exercises.length > 1) h += `<button class="ghost" style="margin:-6px 0 6px;padding:0" data-act="short">⏱ Short on time?</button>`;
   if (!a.exercises.length) h += `<div class="empty">Add your first exercise to get going.</div>`;
   a.exercises.forEach((e, i) => {
     const prev = lastSetsFor(e.exId) || [];
-    h += `<div class="card"><div class="ex-title">${miniBody(exerciseKeys(exName(e.exId)), 70, null, true)}<b class="grow" style="margin-left:8px">${esc(exName(e.exId))}</b><button class="icon" data-act="swap-ex" data-i="${i}" aria-label="Swap exercise">⇄</button><button class="icon" data-act="rm-ex" data-i="${i}" aria-label="Remove exercise">✕</button></div>
+    h += `<div class="card"><div class="ex-title">${miniBody(exerciseKeys(exName(e.exId)), 70, null, true)}<b class="grow" style="margin-left:8px">${esc(exName(e.exId))}</b><button class="icon" data-act="warmup" data-i="${i}" aria-label="Warm-up sets">🔥</button><button class="icon" data-act="swap-ex" data-i="${i}" aria-label="Swap exercise">⇄</button><button class="icon" data-act="rm-ex" data-i="${i}" aria-label="Remove exercise">✕</button></div>
       ${i === 0 ? `<div class="coach">🔥 Warm up with 1–2 quick ramp-up sets. Don't log them, and don't burn energy on them: save it for the working sets.</div>` : ''}
-      ${e.reps ? `<div class="muted small" style="margin:-4px 0 4px">${e.sets.length} × ${esc(e.reps)} reps${e.effort ? ' · ' + esc(e.effort) : ''}${e.rest ? ' · rest ' + Math.round(e.rest / 60 * 2) / 2 + ' min' : ''}</div>` : ''}
-      ${overloadHint(e)}
+      ${whySets(e, i)}${e.reps ? `<div class="muted small" style="margin:-4px 0 4px">${e.sets.length} × ${esc(e.reps)} reps${e.effort ? ' · ' + esc(e.effort) : ''}${e.rest ? ' · rest ' + Math.round(e.rest / 60 * 2) / 2 + ' min' : ''}</div>` : ''}
+      ${overloadHint(e)}${plateauHint(e)}${deloadOn() ? '<div class="coach">Easy week: about 10% lighter, stop with 3 reps left.</div>' : ''}
       <div class="set-row hdr"><span>Set</span><span>Last time</span><span>${S.unit}</span><span>Reps</span><span></span></div>`;
     e.sets.forEach((s, j) => {
       const p = prev[j];
@@ -232,7 +236,7 @@ function viewActive(){
         <span class="prev" data-act="fill" data-i="${i}" data-j="${j}">${p ? fmtW(p.w) + ' × ' + p.r : '—'}</span>
         <input inputmode="decimal" data-field="w" data-i="${i}" data-j="${j}" value="${fmtW(s.w)}" placeholder="${p ? fmtW(p.w) : '0'}" aria-label="Weight">
         <input inputmode="numeric" data-field="r" data-i="${i}" data-j="${j}" value="${s.r == null ? '' : s.r}" placeholder="${p ? p.r : '0'}" aria-label="Reps">
-        <button class="chk" data-act="done" data-i="${i}" data-j="${j}" aria-label="Set done">✓</button></div>`;
+        <button class="chk" data-act="done" data-i="${i}" data-j="${j}" aria-label="Set done">✓</button></div>` + rirRow(s, i, j);
     });
     h += `<div class="row-btns"><button class="ghost" data-act="add-set" data-i="${i}">＋ Add set</button>${e.sets.length > 1 ? `<button class="ghost" style="color:var(--muted)" data-act="rm-set" data-i="${i}">− Remove set</button>` : ''}</div></div>`;
   });
@@ -241,6 +245,20 @@ function viewActive(){
     <button class="primary wide" data-act="finish">Finish workout</button>
     <button class="danger-link wide" data-act="cancel-wo">Cancel workout</button>`;
 }
+/** A third set nobody asked for needs a reason: say it, and offer two. */
+function whySets(e, i){
+  const u = S.user, r = S.active && S.active.rid && S.routines.find(x => x.id === S.active.rid), it = r && r.items.find(x => x.exId === e.exId), base = u && (STYLES[u.style] || STYLES.hard2).sets;
+  if (!it || !u || it.sets < 3 || !it.slot || !SLOTS[it.slot] || e.sets.length < 3 || e.sets.some(s => s.done)) return '';
+  const why = base === 3 ? 'you chose the 3-set style' : 'your plan says so';
+  return `<div class="muted small" style="margin:-2px 0 4px">${it.sets} sets: ${esc(why)}. <button class="ghost small" style="min-height:44px;padding:0 4px" data-act="two-sets" data-i="${i}">Make it 2</button></div>`;
+}
+ACTIONS['two-sets'] = b => {
+  const e = S.active.exercises[+b.dataset.i]; if (e.sets.some(s => s.done)) return;
+  e.sets = e.sets.slice(0, 2);
+  S.routines.forEach(r => r.items.forEach(x => { if (x.exId === e.exId && x.sets > 2 && (!S.program || S.program.ids.includes(r.id))) x.sets = 2; }));
+  programSets().forEach(o => { if (o.x.exId === e.exId && o.want !== 2) S.user.sets = Object.assign({}, S.user.sets, {[o.k]:2}); });
+  save(); render(); toast(exName(e.exId) + ' is 2 sets from now on');
+};
 /* ---------- muscles left empty in setup: choose the movement whenever you like ---------- */
 const openSlots = a => { const r = a && a.rid && S.routines.find(x => x.id === a.rid); return r ? (r.open || []).filter(o => SLOTS[o.slot]) : []; };
 /** Same muscle left empty on other days gets it too, so it's only chosen once. */
@@ -273,7 +291,7 @@ ACTIONS['fill-slot'] = b => {
 function finishWorkout(){
   const a = S.active;
   const exercises = a.exercises
-    .map(e => ({exId:e.exId, sets:e.sets.filter(s => s.done && s.r != null).map(s => ({w:s.w || 0, r:s.r}))}))
+    .map(e => ({exId:e.exId, sets:e.sets.filter(s => s.done && s.r != null).map(s => s.rir == null ? {w:s.w || 0, r:s.r} : {w:s.w || 0, r:s.r, rir:s.rir})}))
     .filter(e => e.sets.length);
   if (!exercises.length) {
     if (confirm('No sets are ticked ✓ yet. Throw this workout away?')) { S.active = null; save(); render(); }
@@ -432,7 +450,7 @@ VIEWS['gym/progress'] = {
 /* ---------- routines ---------- */
 VIEWS['gym/routines'] = {render(){
   let h = `<button class="primary big-start" data-act="new-routine">＋ New routine</button>
-    <button class="secondary wide" data-act="onboard" style="margin-bottom:12px">✨ ${S.program ? 'Rebuild my program' : 'Build me a program'}</button>`;
+    <button class="secondary wide" data-act="onboard" style="margin-bottom:12px">✨ ${S.program ? 'Rebuild my program' : 'Build me a program'}</button>${S.program ? '<button class="secondary wide" data-act="plan-sets" style="margin-bottom:12px">Change sets per movement</button>' : ''}`;
   if (!S.routines.length) h += `<div class="empty">No routines yet.</div>`;
   S.routines.forEach(r => {
     h += `<div class="card"><div class="item"><span class="t">${esc(r.name)}</span><button class="ghost" data-act="edit-routine" data-id="${r.id}">Edit</button></div>

@@ -223,6 +223,11 @@ ACTIONS.settings = () => openSheet((b, sh) => {
     <div class="sec">Your plan</div>
     <button class="secondary wide" data-redo>Redo setup (goals, body, training split)</button>
     <button class="secondary wide" data-goals>Calories & macro targets</button>
+    <div class="sec">App</div>
+    <button class="secondary wide" data-go2="themes">Colours</button>
+    <button class="secondary wide" data-go2="reminders">Reminders</button>
+    ${window.GTNative && window.GTNative.widgetKinds ? '<button class="secondary wide" data-go2="widgets">Home-screen widgets</button><button class="secondary wide" data-go2="health">Health (steps, sleep, heart rate)</button>' : ''}
+    <button class="secondary wide" data-rir>${S.rirOff ? 'Ask for reps left after each set: off' : 'Ask for reps left after each set: on'}</button>
     <div class="sec">Backup</div>
     <div class="muted small" style="margin-bottom:8px">${A ? 'Your account keeps a copy too.' : 'Everything lives only on this phone.'} Copy a backup now and then and keep it somewhere safe (notes app, email to yourself), especially before you uninstall or switch phones.</div>
     <button class="secondary wide" id="bcopy">Copy backup</button>
@@ -233,6 +238,8 @@ ACTIONS.settings = () => openSheet((b, sh) => {
   accountButtons(b, sh);
   on(b, '[data-u]', btn => { S.unit = btn.dataset.u; save(); sh.refresh(); render(); });
   on(b, '[data-goals]', () => openTargets());
+  on(b, '[data-go2]', x => { closeSheet(); ACTIONS[x.dataset.go2](x); });
+  on(b, '[data-rir]', () => { S.rirOff = !S.rirOff; save(); sh.refresh(); render(); });
   on(b, '[data-redo]', () => { closeSheet(); startOnboarding(true); });
   on(b, '#bcopy', () => {
     const ta = document.createElement('textarea'); ta.value = JSON.stringify(S); document.body.appendChild(ta);

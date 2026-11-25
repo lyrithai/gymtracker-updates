@@ -63,13 +63,13 @@ VIEWS.today = {
     return (h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening') + (S.user && S.user.name ? ', ' + S.user.name : '');
   },
   render(){
-    const dk = today(), T = S.food.targets, {t} = dayTotals(dk);
+    const dk = today(), T = targetsOn(dk), {t} = dayTotals(dk);
     const left = T.kcal - t[0];
     let h = `<div class="muted small" style="margin:-6px 0 12px">${new Date().toLocaleDateString(undefined, {weekday:'long', day:'numeric', month:'long'})}</div>
       <button class="card tap sum" data-act="go" data-tab="food" data-sub="diary" style="color:var(--text)">${ring(t[0], T.kcal, fmtNum(t[0]), left >= 0 ? fmtNum(left) + ' left' : fmtNum(-left) + ' over')}
       <div class="bars">${bar('Protein', t[1], T.protein, 'var(--p)')}${bar('Carbs', t[2], T.carbs, 'var(--c)')}${bar('Fat', t[3], T.fat, 'var(--f)')}</div></button>
       <div class="quick" style="margin-bottom:12px"><button class="primary" data-act="food-add" data-meal="">＋ Food</button><button class="secondary" data-act="scan">▦ Scan</button></div>
-      <button class="secondary wide" data-act="snacks" style="margin:0 0 12px">🍿 Snack ideas that fit</button>`;
+      <div class="quick" style="margin-bottom:12px"><button class="secondary" data-act="typeit">⌨️ Type it</button><button class="secondary" data-act="foodtools">🧰 More ways</button></div>` + healthCard();
     // gym
     const done = workoutsOn(dk);
     h += `<div class="card"><div class="item"><b>🏋️ Gym</b>`;
@@ -82,7 +82,7 @@ VIEWS.today = {
       else if (nx) h += `<button class="secondary wide" data-act="start-routine" data-id="${nx.r.id}">Start ${esc(nx.r.name)}${nx.today ? ' (today)' : nx.known || S.program ? ' (next up)' : ''}</button>`;
     }
     h += `</div>`;
-    h += scheduleCard();
+    h += cardioCard() + focusCard() + scheduleCard() + suppCard();
     // water
     const water = S.body.water[dk] || 0, wg = S.body.waterGoal;
     h += `<div class="card"><div class="item"><b>💧 Water</b><span class="muted small">${(water / 1000).toFixed(2)} / ${(wg / 1000).toFixed(1)} L</span></div>
@@ -106,7 +106,7 @@ VIEWS.today = {
     const lw = S.body.weights[S.body.weights.length - 1];
     h += `<div class="card"><div class="item"><b>⚖️ Weight</b><button class="ghost" data-act="weight-log">Log</button></div>
       <div class="muted small">${lw ? r1(lw.kg) + ' kg · ' + dlabel(lw.d) : 'Not logged yet'}</div></div>`;
-    return h;
+    return h + toolsCard();
   }
 };
 
@@ -184,8 +184,9 @@ VIEWS['life/body'] = {
         <div class="stat"><div class="v">${wkAgo ? (last.kg - wkAgo.kg >= 0 ? '+' : '') + r1(last.kg - wkAgo.kg) : '–'}</div><div class="l">vs a week ago</div></div></div>
         <div class="card"><canvas id="wchart"></canvas></div>
         <div class="muted small" style="margin-bottom:8px">${W.length > 1 ? 'Since ' + dlabel(first.d) + ': ' + (last.kg - first.kg >= 0 ? '+' : '') + r1(last.kg - first.kg) + ' kg' : ''}</div>
-        ${weightTrendCard()}`;
+        ${forecastCard()}${weightTrendCard()}`;
     } else h += `<div class="muted small">Log your weight a few times a week, same time of day, to see the trend.</div>`;
+    h += `<div class="quick" style="margin:10px 0"><button class="secondary" data-act="photos">📸 Photos</button><button class="secondary" data-act="tape">📏 Measurements</button></div>`;
     const days = Array.from({length:7}, (_, i) => dadd(today(), -i));
     h += `<div class="sec">💧 Water (goal ${(S.body.waterGoal / 1000).toFixed(1)} L)</div><div class="card">`;
     days.forEach(d => { const v = S.body.water[d] || 0; h += `<div class="bar"><div class="lbl"><span>${dlabel(d)}</span><span class="muted">${(v / 1000).toFixed(2)} L</span></div><div class="track"><i style="width:${clamp(v / S.body.waterGoal * 100, 0, 100)}%;background:var(--p)"></i></div></div>`; });
