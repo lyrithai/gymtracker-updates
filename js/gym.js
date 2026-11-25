@@ -90,7 +90,7 @@ function pickExercise(onPick){
       MUSCLES.forEach(m => {
         const g = list.filter(e => (e.muscle || 'Other') === m).sort((a, c) => a.name.localeCompare(c.name));
         if (!g.length) return;
-        h += `<div class="sec">${m}</div>` + g.map(e => `<button class="pick" data-id="${e.id}"><span>${esc(e.name)}</span><span class="muted">+</span></button>`).join('');
+        h += `<div class="sec">${m}</div>` + g.map(e => `<button class="pick" data-id="${e.id}"><span>${esc(e.name)}${e.pop ? ' <span class="chip">🔥 popular</span>' : ''}</span><span class="muted">+</span></button>`).join('');
       });
       if (!h) h = '<div class="empty">Nothing found</div>';
       const L = b.querySelector('#exlist'); L.innerHTML = h;
@@ -106,25 +106,26 @@ function pickExercise(onPick){
 const POOL_GROUP = {upperChest:'Chest', midChest:'Chest', lats:'Back', upperback:'Back', traps:'Back', lowerBack:'Back', frontDelt:'Shoulders', sideDelt:'Shoulders', rearDelt:'Shoulders',
   triOverhead:'Arms', triNormal:'Arms', biceps:'Arms', brachio:'Arms', flexors:'Arms', extensors:'Arms', quads:'Legs', hamstrings:'Legs', glutes:'Legs', adductors:'Legs', calves:'Legs', abs:'Core', obliques:'Core'};
 const isBuiltIn = e => DEFAULT_EX.some(([n]) => n.toLowerCase() === e.name.toLowerCase());
-const myExercises = () => S.exercises.filter(e => !e.hidden && !isBuiltIn(e));
+const myExercises = () => S.exercises.filter(e => !e.hidden && !e.pop && !isBuiltIn(e));
 function editExercise(ex, opt){
   opt = opt || {};
   const opts = Object.keys(POOL_GROUP).map(k => [k, POOL_NAMES[k]]), have = ex ? ex.pools || [] : [opt.pool || ''];
   ask(ex ? 'Edit exercise' : 'Add my own exercise', [
     {k:'name', label:'Name', v:ex ? ex.name : opt.name || '', ph:'e.g. Cable Press-Around'},
-    {k:'p1', label:'Main muscle', v:have[0] || '', type:'select', opts:[['', 'Choose…']].concat(opts)},
+    {k:'p1', label:'Main muscle (optional)', v:have[0] || '', type:'select', opts:[['', 'Not sure yet']].concat(opts)},
     {k:'p2', label:'Also hits (optional)', v:have[1] || '', type:'select', opts:[['', 'Nothing else']].concat(opts)}
   ], o => {
     const name = o.name.trim();
     if (!name) { toast('Name the exercise'); return false; }
-    if (!o.p1) { toast('Choose the main muscle'); return false; }
+    if (o.p2 && !o.p1) { o.p1 = o.p2; o.p2 = ''; }
     const same = S.exercises.find(e => e !== ex && e.name.toLowerCase() === name.toLowerCase());
     if (same && (!same.hidden || ex)) { toast('There is already an exercise called ' + same.name); return false; }
     let e = ex || same;   // same = one you removed before: bring it back with its history
     if (!e) { e = {id:uid()}; S.exercises.push(e); }
     const old = e.name;
-    Object.assign(e, {name, pools:[...new Set([o.p1, o.p2].filter(Boolean))], muscle:POOL_GROUP[o.p1], custom:true});
-    delete e.hidden;
+    Object.assign(e, {name, pools:[...new Set([o.p1, o.p2].filter(Boolean))], muscle:POOL_GROUP[o.p1] || (ex && ex.muscle) || 'Other', custom:true});
+    delete e.hidden; delete e.pop;
+    if (!ex) e.share = true;    // counts towards the popular list if you're logged in (Settings turns it off)
     if (old && old !== name) [S.user && S.user.picks, OB && OB.picks].forEach(p => { if (p) Object.keys(p).forEach(k => { if (p[k] === old) p[k] = name; }); });
     save(); render(); toast('Saved ' + name);
     if (opt.onDone) setTimeout(() => opt.onDone(e), 0);   // after this panel has closed
@@ -141,8 +142,8 @@ ACTIONS['my-ex'] = b => {
 };
 
 /* ---------- workout ---------- */
-function startWorkout(name, items){
-  S.active = {id:uid(), name, start:Date.now(), exercises: items.map(it => newEntry(it.exId, it.sets, it.reps, it.rest, it.effort))};
+function startWorkout(name, items, rid){
+  S.active = {id:uid(), name, rid:rid || null, start:Date.now(), exercises: items.map(it => newEntry(it.exId, it.sets, it.reps, it.rest, it.effort))};
   save(); go('gym', 'workout');
 }
 function newEntry(exId, n, reps, rest, effort){
@@ -235,10 +236,40 @@ function viewActive(){
     });
     h += `<div class="row-btns"><button class="ghost" data-act="add-set" data-i="${i}">＋ Add set</button>${e.sets.length > 1 ? `<button class="ghost" style="color:var(--muted)" data-act="rm-set" data-i="${i}">− Remove set</button>` : ''}</div></div>`;
   });
+  openSlots(a).forEach(o => { h += `<button class="sch-free" style="min-height:56px" data-act="fill-slot" data-k="${esc(o.k)}"><b style="color:var(--text)">＋ ${esc(SLOTS[o.slot].label)}</b> · ${o.sets} × ${esc(o.reps)}<br>Choose a movement when you get to it</button>`; });
   return h + `<button class="secondary wide" data-act="add-ex">＋ Add exercise</button>
     <button class="primary wide" data-act="finish">Finish workout</button>
     <button class="danger-link wide" data-act="cancel-wo">Cancel workout</button>`;
 }
+/* ---------- muscles left empty in setup: choose the movement whenever you like ---------- */
+const openSlots = a => { const r = a && a.rid && S.routines.find(x => x.id === a.rid); return r ? (r.open || []).filter(o => SLOTS[o.slot]) : []; };
+/** Same muscle left empty on other days gets it too, so it's only chosen once. */
+function fillSlot(k, name){
+  const exId = exIdByName(name), ids = S.program ? S.program.ids : [];
+  if (S.user && S.user.picks) S.user.picks[k] = name;
+  S.routines.forEach(r => {
+    if (!(S.active && S.active.rid === r.id) && !ids.includes(r.id)) return;
+    const o = (r.open || []).find(x => x.k === k); if (!o) return;
+    r.open = r.open.filter(x => x !== o);
+    const it = {exId, slot:o.slot, sets:o.sets, reps:o.reps, rest:o.rest, effort:o.effort, pos:o.pos};
+    const at = r.items.findIndex(x => x.pos != null && x.pos > o.pos);
+    if (!r.items.some(x => x.exId === exId)) r.items.splice(at < 0 ? r.items.length : at, 0, it);
+    if (S.active && S.active.rid === r.id && !S.active.exercises.some(x => x.exId === exId)) S.active.exercises.push(newEntry(exId, o.sets, o.reps, o.rest, o.effort));
+  });
+  save(); render(); toast('Added ' + name);
+}
+ACTIONS['fill-slot'] = b => {
+  const k = b.dataset.k, o = openSlots(S.active).find(x => x.k === k); if (!o) return;
+  const opts = slotOptions(o.slot, (S.user && S.user.equip) || 'full', S.active.exercises.map(x => exName(x.exId)));
+  openSheet(s => {
+    html(s, `<h2>${esc(SLOTS[o.slot].label)}</h2><div class="muted small" style="margin:-8px 0 8px">Saved to your plan for next time.</div>` + opts.map((x, i) => `<button class="pick" data-n="${esc(x[0])}"><span><b>${i ? '' : '★ '}${esc(x[0])}</b>${x[2] ? `<div class="muted small">${esc(x[2])}</div>` : ''}</span><span class="muted">＋</span></button>`).join('') +
+      '<button class="secondary wide" data-own>＋ Add my own exercise</button><button class="secondary wide" data-any>Pick any other exercise</button><button class="danger-link wide" data-drop>I don\'t want this one</button>');
+    on(s, '[data-n]', x => { closeSheet(); fillSlot(k, x.dataset.n); });
+    on(s, '[data-own]', () => { closeSheet(); editExercise(null, {pool:SLOTS[o.slot].pool, onDone:e => fillSlot(k, e.name)}); });
+    on(s, '[data-any]', () => { closeSheet(); pickExercise(id => fillSlot(k, exName(id))); });
+    on(s, '[data-drop]', () => { S.routines.forEach(r => { if (r.open) r.open = r.open.filter(x => x.k !== k); }); save(); closeSheet(); render(); });
+  }, {full:true});
+};
 function finishWorkout(){
   const a = S.active;
   const exercises = a.exercises
@@ -405,7 +436,7 @@ VIEWS['gym/routines'] = {render(){
   if (!S.routines.length) h += `<div class="empty">No routines yet.</div>`;
   S.routines.forEach(r => {
     h += `<div class="card"><div class="item"><span class="t">${esc(r.name)}</span><button class="ghost" data-act="edit-routine" data-id="${r.id}">Edit</button></div>
-      <div class="muted small">${r.items.map(i => `${esc(exName(i.exId))} · ${i.sets}×${i.reps ? esc(i.reps) : ''}`).join('<br>') || 'No exercises'}</div>
+      <div class="muted small">${r.items.map(i => `${esc(exName(i.exId))} · ${i.sets}×${i.reps ? esc(i.reps) : ''}`).concat((r.open || []).map(o => `＋ ${esc((SLOTS[o.slot] || {}).label || '')}: not chosen yet`)).join('<br>') || 'No exercises'}</div>
       <button class="secondary wide" data-act="start-routine" data-id="${r.id}">Start ${esc(r.name)}</button></div>`;
   });
   const mine = myExercises();
@@ -434,7 +465,7 @@ function editRoutine(id){
     on(b, '#radd', () => pickExercise(exId => { d.items.push({exId, sets:3}); sh.refresh(); }));
     on(b, '#rsave', () => {
       if (!d.name.trim()) return toast('Give the routine a name');
-      if (!d.items.length) return toast('Add at least one exercise');
+      if (!d.items.length && !(d.open || []).length) return toast('Add at least one exercise');
       d.name = d.name.trim();
       if (orig) Object.assign(orig, d); else S.routines.push(d);
       save(); closeSheet(); render();
@@ -451,10 +482,15 @@ Object.assign(ACTIONS, {
   'start-empty': () => startWorkout('Workout', []),
   'start-routine': b => {
     if (S.active) { go('gym', 'workout'); return toast('Finish your current workout first'); }
-    const r = S.routines.find(x => x.id === b.dataset.id); if (r) startWorkout(r.name, r.items);
+    const r = S.routines.find(x => x.id === b.dataset.id); if (r) startWorkout(r.name, r.items, r.id);
   },
   'open-wo': b => openWorkout(b.dataset.id),
-  'add-ex': () => pickExercise(exId => { S.active.exercises.push(newEntry(exId)); save(); render(); window.scrollTo(0, document.body.scrollHeight); }),
+  'add-ex': () => pickExercise(exId => {
+    if (!S.active) return;
+    const en = newEntry(exId), r = S.active.rid && S.routines.find(x => x.id === S.active.rid);
+    S.active.exercises.push(en); save(); render(); window.scrollTo(0, document.body.scrollHeight);
+    if (r && !r.items.some(i => i.exId === exId)) setTimeout(() => { if (confirm('Add ' + exName(exId) + ' to ' + r.name + ' for next time too?')) { r.items.push({exId, sets:en.sets.length}); save(); } }, 300);
+  }),
   'rm-ex': b => {
     const a = S.active, e = a.exercises[+b.dataset.i];
     if (e.sets.some(s => s.done) && !confirm(`Remove ${exName(e.exId)} and its sets?`)) return;

@@ -121,7 +121,7 @@ const EQUIP = {full:['m','b','d','w'], basic:['b','d','w'], home:['d','w']};
 
 /** A muscle's movements: the built-in list plus your own exercises for it. */
 function poolOf(key){
-  const mine = (S.exercises || []).filter(e => !e.hidden && (e.pools || []).includes(key)).map(e => [e.name, '*', 'Your exercise']);
+  const mine = (S.exercises || []).filter(e => !e.hidden && (e.pools || []).includes(key)).map(e => [e.name, '*', e.pop ? '🔥 Popular' + (popCount(e.name) ? ': added by ' + popCount(e.name) + ' people' : '') : 'Your exercise']);
   return POOLS[key].concat(mine.filter(o => !POOLS[key].some(p => p[0] === o[0])));
 }
 /** Options for a slot (equipment-filtered; your own are always offered), preferred first, minus 'exclude'. */
@@ -139,8 +139,8 @@ function resolvePicks(plan, picks, equip){
   const keys = planKeys(plan), order = [...new Set([].concat(...keys))], names = {}, out = {};
   const clash = k => { const u = []; keys.forEach(d => { if (d.includes(k)) d.forEach(o => { if (o !== k && names[o]) u.push(names[o]); }); }); return u; };
   const opts = (k, ex) => slotOptions(k.split('#')[0], equip, ex);
-  order.forEach(k => { if (picks[k] && opts(k, clash(k)).some(o => o[0] === picks[k])) names[k] = picks[k]; });
-  order.forEach(k => { if (!names[k]) names[k] = (opts(k, clash(k))[0] || opts(k)[0])[0]; });
+  order.forEach(k => { if (picks[k] === '') names[k] = ''; else if (picks[k] && opts(k, clash(k)).some(o => o[0] === picks[k])) names[k] = picks[k]; });
+  order.forEach(k => { if (names[k] === undefined) names[k] = (opts(k, clash(k))[0] || opts(k)[0])[0]; });
   keys.forEach((d, di) => d.forEach((k, si) => { out[di + ':' + si] = names[k]; }));
   return out;
 }
@@ -499,13 +499,13 @@ function drawOB(){
       plan.map((day, i) => `<div class="card"><div class="item"><b>${day.weekday != null ? WEEKDAYS[day.weekday] + ' · ' : ''}${esc(day.name)}</b><span class="muted small">~${day.minutes} min</span></div><div class="row" style="align-items:flex-start;gap:8px"><div class="chips grow">${day.slots.map(x => `<span class="chip ${x.focus ? 'hot' : ''}">${esc(SLOTS[x.slot].label)} · ${x.sets}×${x.reps}</span>`).join('')}</div>${miniBody([].concat(...day.slots.map(x => SLOT_KEYS[x.slot] || [])), 96)}</div></div>`).join('') +
       `<div class="sec">Hard sets per muscle per week</div><div class="chips">${Object.entries(ws).map(([m, n]) => `<span class="chip">${MUSCLE_NAMES[m] || {adductors:'Adductors', tibialis:'Tibialis', neck:'Neck'}[m] || m} ${n}</span>`).join('')}</div>
       <p class="muted small">Low volume on purpose: capped at 10 hard sets per muscle a week, and every set goes to failure. Next you pick a movement for each slot. Not sure? ★ is the pick.</p>
-      <button class="ghost wide" data-ob="auto">Pick everything for me</button>`;
+      <button class="ghost wide" data-ob="auto">Pick everything for me</button><button class="ghost wide" data-ob="empty0">Skip, I'll add exercises as I train</button>`;
     next = 'Pick my movements';
   } else if (step === 'pick') {
     const list = pickList(), it = list[OB.pickIdx];
     const resolved = resolvePicks(buildPlan(d), OB.picks, d.equip), nameOf = o => resolved[o.di + ':' + o.si];
     // movements already in a day this one is used on (yours or the defaults) aren't offered again
-    const sameDay = list.filter(o => o.id !== it.id && o.days.some(x => it.days.includes(x))).map(nameOf);
+    const sameDay = list.filter(o => o.id !== it.id && o.days.some(x => it.days.includes(x))).map(nameOf).filter(Boolean);
     const cur = nameOf(it), opts = slotOptions(it.x.slot, d.equip, sameDay.filter(n => n !== cur));
     const slot = SLOTS[it.x.slot];
     const nth = +it.id.split('#')[1];
@@ -514,7 +514,8 @@ function drawOB(){
       <p class="muted">${it.x.sets} × ${it.x.reps} reps, ${it.x.effort}. Pick whatever hits it best for you.${slot.m === 'chest' ? ' Presses and flies both work: fly-only chest is fine if presses beat up your shoulders or triceps.' : ''}</p>
       ${it.days.length > 1 ? `<div class="coach up">Pick once: used on all ${it.days.length} days.</div>` : ''}${sameDay.length ? `<div class="muted small" style="margin:-2px 0 10px">Already picked: ${[...new Set(sameDay)].map(esc).join(', ')}</div>` : ''}` +
       opts.map((o, i) => `<button class="ob-opt ${cur === o[0] ? 'on' : ''}" data-pick="${esc(o[0])}"><b>${i === 0 ? '★ ' : ''}${esc(o[0])}</b><span>${i === 0 ? 'Recommended' + (o[2] ? ' · ' + esc(o[2]) : '') : esc(o[2] || '')}</span></button>`).join('') +
-      `<button class="secondary wide" data-ob="own">＋ Add my own exercise</button><button class="ghost wide" data-ob="auto">Use my picks and ★ for the rest</button>`;
+      `<button class="ob-opt ${cur === '' ? 'on' : ''}" data-pick=""><b>Leave empty</b><span>Choose it during a workout instead</span></button>
+      <button class="secondary wide" data-ob="own">＋ Add my own exercise</button><button class="ghost wide" data-ob="empty">Leave the rest empty, I'll add as I go</button><button class="ghost wide" data-ob="auto">Use my picks and ★ for the rest</button>`;
     next = OB.pickIdx < list.length - 1 ? 'Next' : 'Review';
   } else if (step === 'done') {
     const plan = buildPlan(d);
@@ -528,7 +529,7 @@ function drawOB(){
       <div class="muted small">Weigh in a few times a week. After 4 weeks the Body tab tells you if calories need moving.</div></div>` +
       plan.map((day, di) => `<div class="card"><b>${day.weekday != null ? WEEKDAY_FULL[day.weekday] + ': ' : ''}${esc(day.name)}</b>${day.slots.map((x, si) => {
         const name = resolvePicks(plan, OB.picks, d.equip)[di + ':' + si];
-        return `<div class="item small" style="padding:4px 0"><span>${esc(name)}</span><span class="muted">${x.sets} × ${x.reps}</span></div>`; }).join('')}</div>`).join('') +
+        return `<div class="item small" style="padding:4px 0"><span>${name ? esc(name) : `<span class="muted">${esc(SLOTS[x.slot].label)}: choose later</span>`}</span><span class="muted">${x.sets} × ${x.reps}</span></div>`; }).join('')}</div>`).join('') +
       (S.routines.length ? `<label class="row" style="margin:12px 0;gap:12px"><button class="tick ${d.replace ? 'on' : ''}" data-k="replace" data-v="${d.replace ? '' : '1'}">${d.replace ? '✓' : ''}</button><span>Replace my current routines (past workouts are kept)</span></label>` : '');
     next = 'Start my plan';
   }
@@ -571,7 +572,11 @@ function drawOB(){
       editExercise(null, {pool, onDone:e => { if (!OB) return; if (e.pools.includes(pool)) OB.picks[it.id] = e.name; drawOB(); }});
     }
     else if (a === 'login') openLogin(false);
-    else if (a === 'auto') { OB.step = OB_STEPS.indexOf('done'); drawOB(); el.scrollTop = 0; }
+    else if (a === 'empty' || a === 'empty0') {
+      pickList().forEach((it, i) => { if (a === 'empty0' || i >= OB.pickIdx) OB.picks[it.id] = ''; });
+      OB.step = OB_STEPS.indexOf('done'); drawOB(); el.scrollTop = 0;
+    }
+    else if (a === 'auto') { Object.keys(OB.picks).forEach(k => { if (OB.picks[k] === '') delete OB.picks[k]; }); OB.step = OB_STEPS.indexOf('done'); drawOB(); el.scrollTop = 0; }
     else if (a === 'next') {
       if (step === 'pick') {
         const list = pickList(), it = list[OB.pickIdx];
@@ -598,8 +603,11 @@ function finishOnboarding(){
     S.body.weights = S.body.weights.filter(w => w.d !== today()).concat({d:today(), kg:r1(d.weight)}).sort((a, b) => a.d.localeCompare(b.d));
   }
   const names = resolvePicks(plan, OB.picks, d.equip);
-  const routines = plan.map((day, di) => ({id:uid(), name:day.name, items:day.slots.map((x, si) => ({
-    exId:exIdByName(names[di + ':' + si]), slot:x.slot, sets:x.sets, reps:x.reps, rest:x.rest, effort:x.effort}))}));
+  const keys = planKeys(plan);
+  const routines = plan.map((day, di) => {
+    const all = day.slots.map((x, si) => ({name:names[di + ':' + si], k:keys[di][si], slot:x.slot, sets:x.sets, reps:x.reps, rest:x.rest, effort:x.effort, pos:si}));
+    return {id:uid(), name:day.name, items:all.filter(x => x.name).map(({name, k, ...x}) => ({exId:exIdByName(name), ...x})), open:all.filter(x => !x.name).map(({name, ...x}) => x)};
+  });
   const oldProgram = S.program ? S.program.ids : [];
   S.routines = d.replace ? routines : routines.concat(S.routines.filter(r => !oldProgram.includes(r.id)));
   S.program = {split:sp.name, ids:routines.map(r => r.id), created:Date.now()};

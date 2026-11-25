@@ -179,10 +179,10 @@ async function doSync({first}){
       if (!sheets.length && !OB) render();
       pushStr = JSON.stringify(snapshot());
       await idb.set('base.' + me, remoteStr).catch(() => {}); still(); A.rev = meta.rev; saveA();
-      if (pushStr === remoteStr) { await publishRanks(); return true; }
+      if (pushStr === remoteStr) { await publishRanks(); await shareExercises(); return true; }
     } else {
       pushStr = JSON.stringify(snapshot());
-      if (meta && pushStr === baseStr) { await publishRanks(); return true; }
+      if (meta && pushStr === baseStr) { await publishRanks(); await shareExercises(); return true; }
     }
     const parts = chunks(pushStr), rev = uid() + uid();
     const writes = [wSet(root + 'meta', {rev, n:parts.length, t:Date.now()}, meta ? {updateTime:meta._time} : {exists:false})].concat(parts.map((s, i) => wSet(root + 'c' + i, {rev, s})));
@@ -190,7 +190,7 @@ async function doSync({first}){
     try { await fsCommit(writes); } catch(e) { if (/FAILED_PRECONDITION|ABORTED|ALREADY_EXISTS/.test(e.code)) continue; throw e; }
     still();
     await idb.set('base.' + me, pushStr).catch(() => {}); still(); A.rev = rev; saveA();
-    await publishRanks();
+    await publishRanks(); await shareExercises();
     return true;
   }
   return false;
@@ -296,6 +296,7 @@ async function deleteAccount(){
     if (meta) w.push(wDel(root + 'meta'));
     if (p) w.push(wDel('usernames/' + p.u), wDel('profiles/' + me));
     const tok = await token();
+    for (const v of await unshareWrites()) await fsCommit(v);
     if (w.length) await fsCommit(w);
     await auth('delete', {idToken:tok});
     await idb.del('base.' + me).catch(() => {});
@@ -308,6 +309,7 @@ function accountHtml(){
   return A ? `<div class="sec">Account</div><div class="card"><b>${A.username ? '@' + esc(A.username) : esc(A.email)}</b>${A.username ? `<div class="muted small">${esc(A.email)}</div>` : ''}<div class="muted small" id="syncline">${esc(syncText())}</div></div>
       <button class="secondary wide" data-cl="friends">👥 Friends</button><button class="secondary wide" data-cl="user">${A.username ? 'Change username' : 'Pick a username'}</button>
       ${A.username ? `<button class="secondary wide" data-cl="show">Friends can see my ranks: ${A.show ? 'On' : 'Off'}</button>` : ''}
+      <button class="secondary wide" data-cl="share">Share exercises I add: ${S.shareEx === false ? 'Off' : 'On'}</button><div class="muted small">Just the name and muscle. When ${POP_MIN} people add the same one, everyone gets it.</div>
       <button class="secondary wide" data-cl="out">Log out</button><button class="danger-link wide" data-cl="del">Delete account</button>`
     : `<div class="sec">Account</div><div class="muted small" style="margin-bottom:8px">Save your data to an account so it follows you to any phone, and see friends' ranks.</div>
       <button class="primary wide" data-cl="new">Create an account</button><button class="secondary wide" data-cl="in">Log in</button>`;
@@ -318,6 +320,7 @@ function accountButtons(b, sh){
     if (k === 'new' || k === 'in') openLogin(k === 'new');
     else if (k === 'friends') openFriends();
     else if (k === 'user') openUsername();
+    else if (k === 'share') { S.shareEx = S.shareEx === false; save(); sh.refresh(); }
     else if (k === 'out') logOut();
     else if (k === 'del') deleteAccount();
     else if (k === 'show') { const was = A.show; A.show = !was; A.ranks = null; try { await publishRanks(); saveA(); sh.refresh(); } catch(e) { A.show = was; toast(cloudMsg(e)); } }
