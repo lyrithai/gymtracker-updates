@@ -1,13 +1,13 @@
 // Offline copy of the whole app. FILES is filled in by tools/build_web.py: path -> SHA-256.
 // Files are kept by fingerprint, so an update only downloads what changed, and a file that doesn't match is refused.
-const VERSION = 20;
+const VERSION = 21;
 const FILES = {
 "app.webmanifest": "e9c687b09c8cec9d2503bbb4dc77eb6969a8cdb124c629686a95cc6bd3ded4f1",
 "auth.html": "0e022a6ebad2cc151e50b407142d3018d386b665323b488b9e7ec79af4a733ef",
 "icon-180.png": "4073fb93ec1c6228ff79ba935185594bcbc4b13bfd880c2fa121a51a24abe318",
 "icon-192.png": "e3de9c8e9e8e2adb575420060d43ddcc72bdd1ede5d49afa41a94157eccf28ae",
 "icon-512.png": "d77dc6122c614721a1bb7e84d0b900dc9c7fe6b9773202627e4760900323c934",
-"index.html": "79777429e1e3506745562db2bba11a69dd931745d43da6a7d36d5f5427837940",
+"index.html": "3e8ccac6bf89ffbe522f85183e822c59190ea797ea629473478968fed69dd4dd",
 "privacy.html": "d641bc8f70988c3f30e359c0580941eae700a5cfd3330c3992c177521f5c6fe9",
 "css/app.css": "f6f42d62be019cac0effc93df6a6996c79dc34da73567c5cd6f070d8cd3907c1",
 "data/eatout.js": "f06df9250837cc2f5366e2c3a226e6439a71bd44bb4205bcc23a888b88b78f2a",
@@ -30,7 +30,7 @@ const FILES = {
 "js/program.js": "9e2ab19daa2eca739d7b0c8f505d7382b159d71e745a286d0167a423a38d898c",
 "js/ranks.js": "7489b8023911c9647b6fc8ae7b11340c560441ed339da1b48e95aad4cc6bb9aa",
 "js/recipes.js": "cd4f596d7cf9c0d79537865838900cc79f5c9d460f32980de046b1588d23c03c",
-"js/schedule.js": "7fd8a58f8ffd4bdeec1a9fe163bc0314ae3463a8c56af17be1267951f5be27ed",
+"js/schedule.js": "f3c70d9bdbbd4fa41a23bad6ae97f76a495af8c45872a8347435bc51a898e9d5",
 "js/sets.js": "5213436d63660c7d6b3b2ba4fe3f854de16aca2314415ae7d1923f6831764c9b",
 "js/snacks.js": "d456b12bda95812af1569d9637d5471f5f731bee73aafeb4a0747fd9572f69dd",
 "js/typeit.js": "e9b5e456fb641b427f75b66c5b45d787d907e8338c50c8fa73d5f2081b469b36",

@@ -49,7 +49,12 @@ function nowNext(){
   if (!next) { next = dayBlocks((i + 1) % 7).find(x => !x.carry); day = 'tomorrow'; }
   return {cur, next, day};
 }
-const isDone = x => !!(S.blockDone[x.date] && S.blockDone[x.date][x.b.id]);
+/** A block is a timetable slot: it counts as done by itself once its time is up. Tapping the tick overrides that for one day
+    (1 = done early, 0 = skipped). */
+const weekday0 = k => (dparse(k).getDay() + 6) % 7;
+const blockEnd = x => { const d = dparse(x.date); d.setHours(0, x.b.start + blockLen(x.b), 0, 0); return d.getTime(); };
+const autoDone = x => blockEnd(x) <= Date.now();
+const isDone = x => { const v = S.blockDone[x.date] && S.blockDone[x.date][x.b.id]; return v === undefined ? autoDone(x) : !!v; };
 /** Other blocks that share time with this one on any day. */
 function clashes(b, skipId){
   const abs = x => x.days.map(d => [d * 1440 + x.start, d * 1440 + x.start + blockLen(x)]);
@@ -74,7 +79,7 @@ VIEWS['life/schedule'] = {render(){
     gap(x.from);
     const live = schDay === t && x.from <= n && n < x.to, done = isDone(x);
     h += `<div class="sch ${done ? 'done' : ''} ${live ? 'live' : ''}" style="border-left-color:${x.b.color};min-height:${Math.min(120, 52 + (x.to - x.from) / 10)}px">
-      ${x.carry ? '' : `<button class="tick ${done ? 'on' : ''}" data-act="sch-tick" data-id="${x.b.id}" data-d="${x.date}" aria-label="Done">${done ? '✓' : ''}</button>`}
+      ${x.carry ? '' : `<button class="tick ${done ? 'on' : ''}" data-act="sch-tick" data-id="${x.b.id}" data-d="${x.date}" aria-label="${done ? 'Done: tap if you skipped it' : 'Tap to mark done early'}">${done ? '✓' : ''}</button>`}
       <button class="tap grow" style="background:none;color:var(--text);padding:0" data-act="sch-edit" data-id="${x.b.id}"><b>${esc(x.b.title)}</b>${live ? ' <span class="chip hot">now</span>' : ''}
       <div class="muted small">${x.carry ? 'from last night · until ' + fmtT(x.b.end) : fmtT(x.b.start) + ' – ' + fmtT(x.b.end) + (overnight(x.b) && x.b.end ? ' next day' : '')} · ${fmtLen(x.carry ? x.to - x.from : blockLen(x.b))}</div></button></div>`;
     at = Math.max(at, x.to);
@@ -141,8 +146,10 @@ Object.assign(ACTIONS, {
   'sch-gap': b => editBlock(null, {start:+b.dataset.a, end:+b.dataset.b}),
   'sch-edit': b => { const x = S.blocks.find(y => y.id === b.dataset.id); if (x) editBlock(x); },
   'sch-tick': b => {
-    const d = b.dataset.d, m = S.blockDone[d] = S.blockDone[d] || {};
-    if (m[b.dataset.id]) delete m[b.dataset.id]; else m[b.dataset.id] = 1;
+    const d = b.dataset.d, id = b.dataset.id, x = dayBlocks(weekday0(d)).find(y => y.b.id === id && y.date === d && !y.carry), m = S.blockDone[d] = S.blockDone[d] || {};
+    if (!x) { delete S.blockDone[d]; return; }
+    const want = !isDone(x);                       // what the tap asks for
+    if (want === autoDone(x)) delete m[id]; else m[id] = want ? 1 : 0;   // back to automatic when it matches
     if (!Object.keys(m).length) delete S.blockDone[d];
     save(); render();
   },
