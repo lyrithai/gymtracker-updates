@@ -68,7 +68,8 @@ VIEWS.today = {
     let h = `<div class="muted small" style="margin:-6px 0 12px">${new Date().toLocaleDateString(undefined, {weekday:'long', day:'numeric', month:'long'})}</div>
       <button class="card tap sum" data-act="go" data-tab="food" data-sub="diary" style="color:var(--text)">${ring(t[0], T.kcal, fmtNum(t[0]), left >= 0 ? fmtNum(left) + ' left' : fmtNum(-left) + ' over')}
       <div class="bars">${bar('Protein', t[1], T.protein, 'var(--p)')}${bar('Carbs', t[2], T.carbs, 'var(--c)')}${bar('Fat', t[3], T.fat, 'var(--f)')}</div></button>
-      <div class="quick" style="margin-bottom:12px"><button class="primary" data-act="food-add" data-meal="">＋ Food</button><button class="secondary" data-act="scan">▦ Scan</button></div>`;
+      <div class="quick" style="margin-bottom:12px"><button class="primary" data-act="food-add" data-meal="">＋ Food</button><button class="secondary" data-act="scan">▦ Scan</button></div>
+      <button class="secondary wide" data-act="snacks" style="margin:0 0 12px">🍿 Snack ideas that fit</button>`;
     // gym
     const done = workoutsOn(dk);
     h += `<div class="card"><div class="item"><b>🏋️ Gym</b>`;

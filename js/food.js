@@ -112,7 +112,8 @@ VIEWS['food/diary'] = {render(){
   let h = `<div class="datebar"><button class="icon" data-act="fday" data-d="-1">‹</button><b>${dlabel(foodDate)}</b><button class="icon" data-act="fday" data-d="1">›</button></div>
     <div class="card sum">${ring(t[0], T.kcal, fmtNum(t[0]), left >= 0 ? fmtNum(left) + ' left' : fmtNum(-left) + ' over')}
     <div class="bars">${bar('Protein', t[1], T.protein, 'var(--p)')}${bar('Carbs', t[2], T.carbs, 'var(--c)')}${bar('Fat', t[3], T.fat, 'var(--f)')}</div></div>
-    <div class="row" style="margin-bottom:12px"><button class="primary grow" data-act="food-add" data-meal="">＋ Add food</button><button class="secondary" data-act="scan" style="min-width:110px">▦ Scan</button></div>`;
+    <div class="row" style="margin-bottom:12px"><button class="primary grow" data-act="food-add" data-meal="">＋ Add food</button><button class="secondary" data-act="scan" style="min-width:110px">▦ Scan</button></div>
+    <button class="secondary wide" data-act="snacks" style="margin:0 0 12px">🍿 Snack ideas that fit</button>`;
   MEALS.forEach(([m, label]) => {
     const es = dayEntries(foodDate).filter(e => e.meal === m);
     const kc = es.reduce((a, e) => { const f = foodFromCache(e.key); return a + (f ? kcalOf(f, e.g) : 0); }, 0);
@@ -446,23 +447,72 @@ VIEWS['food/nutrients'] = {render(){
 }};
 
 /* ---------- targets ---------- */
+/** Resting burn (Mifflin-St Jeor). */
+function bmrOf(p){ return 10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'f' ? -161 : 5); }
+/** Protein, carbs and fat that add up to the calories.
+   Protein 0.8 g per lb of bodyweight (1 g on a cut when it fits), fat 0.3 g per lb on a cut or 0.4 otherwise, carbs get the rest.
+   When calories are low, carbs go first, then extra protein; protein and fat have floors because the body needs them. */
+function macrosFor(kcal, p){
+  kcal = Math.max(0, Math.round(kcal));
+  const lb = Math.min(p.weight, 27 * Math.pow(p.height / 100, 2)) * 2.20462;   // heavier than BMI 27: don't scale protein with it
+  const cut = p.goal === 'cut';
+  let protein = lb * (cut ? 1 : 0.8), fat = lb * (cut ? 0.3 : 0.4);
+  const carbs = () => (kcal - protein * 4 - fat * 9) / 4;
+  if (carbs() < lb * 0.5) fat = Math.max(lb * 0.3, Math.min(fat, (kcal - protein * 4 - lb * 2) / 9));
+  if (carbs() < lb * 0.5) protein = Math.max(lb * 0.8, Math.min(protein, (kcal - fat * 9 - lb * 2) / 4));
+  if (carbs() < 0) { const k = kcal / (protein * 4 + fat * 9); protein *= k; fat *= k; }
+  protein = Math.round(protein); fat = Math.round(fat);
+  return {kcal, protein, carbs:Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4)), fat};
+}
+const macroKcal = T => T.protein * 4 + T.carbs * 4 + T.fat * 9;
+/** Change one number and the rest follow so it always adds up: calories set all three; protein or fat come out of carbs; carbs come out of fat. */
+function balanceTargets(T, k, p){
+  const v = x => Math.max(0, Math.round(x || 0));
+  if (k === 'kcal') return macrosFor(T.kcal, p);
+  const o = {kcal:v(T.kcal), protein:v(T.protein), carbs:v(T.carbs), fat:v(T.fat)};
+  if (k === 'protein') { o.protein = Math.min(o.protein, Math.floor(o.kcal / 4)); o.fat = Math.min(o.fat, Math.floor((o.kcal - o.protein * 4) / 9)); }
+  if (k === 'fat') { o.fat = Math.min(o.fat, Math.floor(o.kcal / 9)); o.protein = Math.min(o.protein, Math.floor((o.kcal - o.fat * 9) / 4)); }
+  if (k === 'carbs') {
+    o.carbs = Math.min(o.carbs, Math.floor(o.kcal / 4)); o.protein = Math.min(o.protein, Math.floor((o.kcal - o.carbs * 4) / 4));
+    o.fat = Math.max(0, Math.round((o.kcal - o.protein * 4 - o.carbs * 4) / 9));
+  } else o.carbs = Math.max(0, Math.round((o.kcal - o.protein * 4 - o.fat * 9) / 4));
+  return o;
+}
+const minKcal = p => p.age < 18 ? Math.round(bmrOf(p) / 10) * 10 : 800;
+function targetWarning(T, p){
+  const lb = p.weight * 2.20462, burn = bmrOf(p) * p.activity, bmr = Math.round(bmrOf(p) / 10) * 10, out = [];
+  if (T.kcal < bmr) out.push(`${fmtNum(T.kcal)} kcal is less than your body burns doing nothing (about ${fmtNum(bmr)}). ${p.age < 18 ? 'You\'re still growing, so please talk to a GP before eating this little.' : 'Expect to lose muscle, sleep and strength. Talk to a GP before staying this low.'}`);
+  else if (burn - T.kcal > 800) out.push(`That's about ${fmtNum(burn - T.kcal)} kcal under what you burn. 500 is a normal cut; 800 is the most the coaches suggest.`);
+  else if (p.age < 18 && burn - T.kcal > 500) out.push('You\'re still growing: a smaller deficit keeps strength and height on track.');
+  if (T.fat < lb * 0.25) out.push('Fat is very low. Fats are essential, so keep at least ' + Math.round(lb * 0.3) + ' g.');
+  if (T.protein < lb * 0.65) out.push('Protein is low for building or keeping muscle: aim for about ' + Math.round(lb * 0.8) + ' g.');
+  return out;
+}
 function suggestTargets(p){
-  const bmr = 10 * p.weight + 6.25 * p.height - 5 * p.age + (p.sex === 'f' ? -161 : 5);
-  let kcal = bmr * p.activity;
-  // cut ~20% under; maingain = small surplus (~5%)
-  if (p.goal === 'cut') kcal *= 0.8; else if (p.goal === 'bulk') kcal *= 1.05;
-  kcal = Math.round(kcal / 10) * 10;
-  // protein 1.6-2.2 g/kg (top end on a cut); fat ~0.7-0.9 g/kg (lower on a cut), carbs fill the rest
-  const protein = Math.round(p.weight * (p.goal === 'cut' ? 2.2 : 2.0));
-  const fat = Math.round(p.weight * (p.goal === 'cut' ? 0.7 : 0.9));
-  const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
-  return {kcal, protein, carbs, fat};
+  const burn = bmrOf(p) * p.activity;
+  // cut: 20% under, never more than 500 under (under 18: 10%) and never below resting burn; maingain: 5% over
+  let kcal = burn;
+  if (p.goal === 'cut') kcal = Math.max(bmrOf(p), burn - Math.min(500, burn * (p.age < 18 ? 0.1 : 0.2))); else if (p.goal === 'bulk') kcal *= 1.05;
+  return macrosFor(Math.round(kcal / 10) * 10, p);
+}
+/** Targets saved before macros followed calories: if they don't add up, keep the calories and fix the macros. */
+function fixTargets(){
+  const T = S.food.targets; if (S.food.macroV === 1) return;
+  S.food.macroV = 1;
+  if (Math.abs(macroKcal(T) - T.kcal) > Math.max(60, T.kcal * 0.05)) { S.food.targets = macrosFor(T.kcal, S.food.profile); setTimeout(() => toast('Your macros now match your calories'), 1500); }
+  save();
 }
 function openTargets(){
-  const p = Object.assign({}, S.food.profile), T = Object.assign({}, S.food.targets);
+  const p = Object.assign({}, S.food.profile); let T = Object.assign({}, S.food.targets);
   openSheet((b, sh) => {
     const sug = suggestTargets(p);
     html(b, `<h2>Calories & macros</h2>
+      <div class="sec" style="margin-top:0">Your daily targets</div>
+      <div class="muted small" style="margin-bottom:4px">Change the calories and protein, carbs and fat line up by themselves.</div>
+      <label class="f">Calories</label><div class="row"><button class="secondary" style="min-width:64px" data-step="-100">−100</button><input class="text-in grow" data-t="kcal" inputmode="numeric" value="${T.kcal}" style="text-align:center;font-size:22px;font-weight:800"><button class="secondary" style="min-width:64px" data-step="100">+100</button></div>
+      <div class="grid3">${[['protein','Protein g','p'],['carbs','Carbs g','c'],['fat','Fat g','f']].map(([k, l, c]) => `<div><label class="f" style="color:var(--${c})">${l}</label><input class="text-in" data-t="${k}" inputmode="numeric" value="${T[k]}"></div>`).join('')}</div>
+      <div class="muted small" id="tsum" style="margin-top:8px"></div><div id="twarn"></div>
+      <button class="primary wide" id="tsave">Save targets</button>
       <div class="sec">About you</div>
       <div class="seg"><button data-sex="m" class="${p.sex === 'm' ? 'on' : ''}">Male</button><button data-sex="f" class="${p.sex === 'f' ? 'on' : ''}">Female</button></div>
       <div class="grid3"><div><label class="f">Age</label><input class="text-in" data-p="age" inputmode="numeric" value="${p.age}"></div>
@@ -470,17 +520,29 @@ function openTargets(){
       <div><label class="f">Weight kg</label><input class="text-in" data-p="weight" inputmode="decimal" value="${p.weight}"></div></div>
       <label class="f">How active</label><select data-p="activity">${[[1.2,'Desk job, little exercise'],[1.375,'Train 1–3 days a week'],[1.55,'Train 3–5 days a week'],[1.725,'Train 6–7 days a week'],[1.9,'Very active job + training']].map(([v, l]) => `<option value="${v}" ${+p.activity === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
       <label class="f">Goal</label><div class="seg">${[['cut','Lose fat'],['maintain','Maintain'],['bulk','Lean bulk']].map(([k, l]) => `<button data-goal="${k}" class="${p.goal === k ? 'on' : ''}">${l}</button>`).join('')}</div>
-      <div class="card" style="margin-top:12px"><div class="muted small">Suggested</div><b>${fmtNum(sug.kcal)} kcal</b> · P ${sug.protein} g · C ${sug.carbs} g · F ${sug.fat} g
+      <div class="card" style="margin-top:12px"><div class="muted small">Suggested for you</div><b>${fmtNum(sug.kcal)} kcal</b> · P ${sug.protein} g · C ${sug.carbs} g · F ${sug.fat} g
         <button class="secondary wide" id="tuse">Use these</button></div>
-      <div class="sec">Your daily targets</div>
-      <div class="grid2">${[['kcal','Calories'],['protein','Protein g'],['carbs','Carbs g'],['fat','Fat g']].map(([k, l]) => `<div><label class="f">${l}</label><input class="text-in" data-t="${k}" inputmode="numeric" value="${T[k]}"></div>`).join('')}</div>
-      <button class="primary wide" id="tsave">Save targets</button>`);
-    b.querySelectorAll('[data-p]').forEach(i => { const ev = i.tagName === 'SELECT' ? 'onchange' : 'onchange'; i[ev] = () => { p[i.dataset.p] = num(i.value) || p[i.dataset.p]; sh.refresh(); }; });
-    b.querySelectorAll('[data-t]').forEach(i => i.oninput = () => T[i.dataset.t] = num(i.value) || 0);
+      <div class="card"><b>How the macros are worked out</b><div class="muted small" style="margin-top:6px;line-height:1.6">• Protein first: about 0.8 g per lb of bodyweight is enough to grow. On a cut it goes up to 1 g when there's room.<br>• Fat second: 0.3 g per lb on a cut, 0.4 otherwise. Fats are essential, so this has a floor.<br>• Carbs get everything left. They aren't essential, so they drop first when calories drop, but they fuel your sets.<br>• A 500 kcal deficit is normal, 700–800 only with a lot to lose.<br>• Each gram: protein 4, carbs 4, fat 9 kcal.</div></div>`);
+    const show = skip => {
+      b.querySelectorAll('[data-t]').forEach(i => { if (i !== skip) i.value = T[i.dataset.t]; });
+      b.querySelector('#tsum').textContent = `${T.protein} × 4 + ${T.carbs} × 4 + ${T.fat} × 9 = ${fmtNum(macroKcal(T))} kcal`;
+      b.querySelector('#twarn').innerHTML = targetWarning(T, p).map(w => `<div class="coach warn" style="margin-top:8px">⚠️ ${esc(w)}</div>`).join('');
+    };
+    b.querySelectorAll('[data-t]').forEach(i => {
+      i.oninput = () => { const k = i.dataset.t; T[k] = num(i.value) || 0; T = balanceTargets(T, k, p); show(i); };
+      i.onchange = () => show(null);
+    });
+    show(null);
+    on(b, '[data-step]', x => { T = macrosFor(Math.max(0, T.kcal + +x.dataset.step), p); show(null); });
+    b.querySelectorAll('[data-p]').forEach(i => { i.onchange = () => { p[i.dataset.p] = num(i.value) || p[i.dataset.p]; T = macrosFor(T.kcal, p); sh.refresh(); }; });
     on(b, '[data-sex]', btn => { p.sex = btn.dataset.sex; sh.refresh(); });
-    on(b, '[data-goal]', btn => { p.goal = btn.dataset.goal; sh.refresh(); });
-    on(b, '#tuse', () => { Object.assign(T, sug); sh.refresh(); });
-    on(b, '#tsave', () => { S.food.profile = p; S.food.targets = T; save(); closeSheet(); render(); toast('Targets saved'); });
+    on(b, '[data-goal]', btn => { p.goal = btn.dataset.goal; T = macrosFor(T.kcal, p); sh.refresh(); });
+    on(b, '#tuse', () => { T = Object.assign({}, sug); sh.refresh(); b.scrollTop = 0; });
+    on(b, '#tsave', () => {
+      const lo = minKcal(p);
+      if (T.kcal < lo) return alert(p.age < 18 ? 'Under 18, the lowest this goes is what your body burns at rest, about ' + fmtNum(lo) + ' kcal, because you\'re still growing. If you want to lose weight, a GP can help you do it safely.' : 'Under 800 kcal a day should only be done with a doctor, so this won\'t go lower.');
+      S.food.profile = p; S.food.targets = T; S.food.macroV = 1; save(); closeSheet(); render(); toast('Targets saved');
+    });
   });
 }
 
