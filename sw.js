@@ -1,13 +1,13 @@
 // Offline copy of the whole app. FILES is filled in by tools/build_web.py: path -> SHA-256.
 // Files are kept by fingerprint, so an update only downloads what changed, and a file that doesn't match is refused.
-const VERSION = 19;
+const VERSION = 20;
 const FILES = {
 "app.webmanifest": "e9c687b09c8cec9d2503bbb4dc77eb6969a8cdb124c629686a95cc6bd3ded4f1",
 "auth.html": "0e022a6ebad2cc151e50b407142d3018d386b665323b488b9e7ec79af4a733ef",
 "icon-180.png": "4073fb93ec1c6228ff79ba935185594bcbc4b13bfd880c2fa121a51a24abe318",
 "icon-192.png": "e3de9c8e9e8e2adb575420060d43ddcc72bdd1ede5d49afa41a94157eccf28ae",
 "icon-512.png": "d77dc6122c614721a1bb7e84d0b900dc9c7fe6b9773202627e4760900323c934",
-"index.html": "4786b76bed424a4230e7e23699930457fb4e075cc68371183a79cf300b63dc7b",
+"index.html": "79777429e1e3506745562db2bba11a69dd931745d43da6a7d36d5f5427837940",
 "privacy.html": "d641bc8f70988c3f30e359c0580941eae700a5cfd3330c3992c177521f5c6fe9",
 "css/app.css": "f6f42d62be019cac0effc93df6a6996c79dc34da73567c5cd6f070d8cd3907c1",
 "data/eatout.js": "f06df9250837cc2f5366e2c3a226e6439a71bd44bb4205bcc23a888b88b78f2a",
@@ -21,13 +21,13 @@ const FILES = {
 "js/food.js": "fe340bd3a0a822c8eaa78e78288b92adf2a81909804b0a57a38dc8af56c6a196",
 "js/foodplus.js": "004880adaa1be2d637de65582e640abd61722a1b88704f903efc05c4ac2c8b43",
 "js/friends.js": "c9f7a380ff42b7b8c25bf9122b5b802db168104fce5da615cee4ac4a28b7f4eb",
-"js/gym.js": "b877631f597415037bccf5400f90715d72d9d201de19ebb091e6c7fb9637c9c5",
+"js/gym.js": "4c617c3eff74e6d390dd4f2da90b36f0fecfeb8842f15307628481c516e0813b",
 "js/gymplus.js": "ba11601a5dd7bf898a63c2267ab398143bb8db14742f1ffc0b5495f142cd109f",
 "js/life.js": "140940708a02245d6574d089c431cfa813feccfbe3cea36ec83ff0a902ca06e8",
 "js/lifeplus.js": "d3ac43966fa28c5267db7ebaa966639286d53b7b1a014de6cc5cf931a8ac0078",
 "js/main.js": "1ae513589745240458c1c312ea3c5d252110d9c23a5c4f0fcbebc4f4537a2470",
 "js/popular.js": "e0015055419df2732290b078bf87205e13a39f2efdd0fcec3a663e364ed527f8",
-"js/program.js": "e092b07ff97fc068da66c13f5e569d964c4445fcdde48c335a471a044b082ad4",
+"js/program.js": "9e2ab19daa2eca739d7b0c8f505d7382b159d71e745a286d0167a423a38d898c",
 "js/ranks.js": "7489b8023911c9647b6fc8ae7b11340c560441ed339da1b48e95aad4cc6bb9aa",
 "js/recipes.js": "cd4f596d7cf9c0d79537865838900cc79f5c9d460f32980de046b1588d23c03c",
 "js/schedule.js": "7fd8a58f8ffd4bdeec1a9fe163bc0314ae3463a8c56af17be1267951f5be27ed",

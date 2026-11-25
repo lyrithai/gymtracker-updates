@@ -76,6 +76,7 @@ function lastSetsFor(exId){
 function workoutsOn(dk){ return S.workouts.filter(w => dkey(new Date(w.start)) === dk); }
 
 /* ---------- exercise picker ---------- */
+const EX_ALIAS = {'Stiff-Leg Deadlift':'sldl', 'Romanian Deadlift':'rdl', 'Overhead Press':'ohp'};
 function pickExercise(onPick){
   let q = '';
   openSheet(b => {
@@ -83,7 +84,7 @@ function pickExercise(onPick){
     const inp = b.querySelector('#exq');
     const draw = () => {
       const ql = q.trim().toLowerCase();
-      const list = S.exercises.filter(e => !e.hidden).filter(e => !ql || e.name.toLowerCase().includes(ql));
+      const list = S.exercises.filter(e => !e.hidden).filter(e => !ql || e.name.toLowerCase().includes(ql) || (EX_ALIAS[e.name] || '').split(' ').some(a => ql.length > 1 && a.startsWith(ql)));
       let h = '';
       if (!S.exercises.some(e => !e.hidden && e.name.toLowerCase() === ql))
         h += `<button class="pick" data-new="1"><span>${ql ? '+ Create “' + esc(q.trim()) + '”' : '+ Add my own exercise'}</span><span class="muted small">new</span></button>`;
