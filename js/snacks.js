@@ -1,6 +1,6 @@
 'use strict';
 /* ================= snack ideas that fit what's left today ================= */
-const SNACK_TASTES = [['any','Anything'],['sweet','🍓 Sweet'],['savoury','🥓 Savoury'],['crunchy','🥨 Crunchy'],['fresh','🍉 Fresh'],['creamy','🥣 Creamy'],['choc','🍫 Chocolatey'],['cheesy','🧀 Cheesy'],['spicy','🌶️ Spicy'],['filling','💪 Filling'],['mine','⭐ My foods']];
+const SNACK_TASTES = [['any','Anything'],['sweet','🍓 Sweet'],['savoury','🥓 Savoury'],['crunchy','🥨 Crunchy'],['fresh','🍉 Fresh'],['creamy','🥣 Creamy'],['choc','🍫 Chocolatey'],['cheesy','🧀 Cheesy'],['spicy','🌶️ Spicy'],['filling','💪 Filling'],['sweets','🍬 Sweets & treats'],['mine','⭐ My foods']];
 let snkTaste = 'any', snkPage = 0;
 /** What's left for a snack now: today's targets minus what's logged, minus room kept for main meals you haven't had yet. */
 function snackRoom(dk){

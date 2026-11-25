@@ -1,13 +1,13 @@
 // Offline copy of the whole app. FILES is filled in by tools/build_web.py: path -> SHA-256.
 // Files are kept by fingerprint, so an update only downloads what changed, and a file that doesn't match is refused.
-const VERSION = 21;
+const VERSION = 22;
 const FILES = {
 "app.webmanifest": "e9c687b09c8cec9d2503bbb4dc77eb6969a8cdb124c629686a95cc6bd3ded4f1",
 "auth.html": "0e022a6ebad2cc151e50b407142d3018d386b665323b488b9e7ec79af4a733ef",
 "icon-180.png": "4073fb93ec1c6228ff79ba935185594bcbc4b13bfd880c2fa121a51a24abe318",
 "icon-192.png": "e3de9c8e9e8e2adb575420060d43ddcc72bdd1ede5d49afa41a94157eccf28ae",
 "icon-512.png": "d77dc6122c614721a1bb7e84d0b900dc9c7fe6b9773202627e4760900323c934",
-"index.html": "3e8ccac6bf89ffbe522f85183e822c59190ea797ea629473478968fed69dd4dd",
+"index.html": "56bdd78ce656adcd0688fa5122cb9ddb4d916e990d09976531fb87efc2a668fc",
 "privacy.html": "d641bc8f70988c3f30e359c0580941eae700a5cfd3330c3992c177521f5c6fe9",
 "css/app.css": "f6f42d62be019cac0effc93df6a6996c79dc34da73567c5cd6f070d8cd3907c1",
 "data/eatout.js": "f06df9250837cc2f5366e2c3a226e6439a71bd44bb4205bcc23a888b88b78f2a",
@@ -15,7 +15,8 @@ const FILES = {
 "data/foods_uk.js": "0f6d54133ed3169ea8cda9fdb86be263730f88bc96db53a5f60455dbefdb761f",
 "data/recipes.js": "96f6e1c7a342ff8489c93508ee73c5263a92f7dbd91e2bf2fb7cd635b2fecbd4",
 "data/snacks.js": "cbcd92dfdc44393072842438ca55bd47899bceeab45d27404a6016699d9c81e7",
-"js/boot.js": "d10fc5e8457e7c07edca2800bd9e214cf2b9b02eebaf7da84ba31e9ad21fa105",
+"data/sweets.js": "bac560bc93bc9a4eac9de11a2864d86de5c502f0c8f5bf87ec837609ee68cc67",
+"js/boot.js": "5edc5a1e4cb8408dbd36063a28134c80159eaf9a72f32fb18eddb08e343b394f",
 "js/cloud.js": "ac5135f7d6957369b70c282a32fc855005e046d454c8dff17d1cbf39506a28e8",
 "js/core.js": "4f2a1d61b4be0edd53aadadff0a94418ac1321dc0ea65a50b22c55b5b94a7972",
 "js/food.js": "fe340bd3a0a822c8eaa78e78288b92adf2a81909804b0a57a38dc8af56c6a196",
@@ -32,7 +33,7 @@ const FILES = {
 "js/recipes.js": "cd4f596d7cf9c0d79537865838900cc79f5c9d460f32980de046b1588d23c03c",
 "js/schedule.js": "f3c70d9bdbbd4fa41a23bad6ae97f76a495af8c45872a8347435bc51a898e9d5",
 "js/sets.js": "5213436d63660c7d6b3b2ba4fe3f854de16aca2314415ae7d1923f6831764c9b",
-"js/snacks.js": "d456b12bda95812af1569d9637d5471f5f731bee73aafeb4a0747fd9572f69dd",
+"js/snacks.js": "b3843dc383d43e7d6ccb1b5dbfdcb7f1d52a49d131d6c007d7b56cf709e8ecbf",
 "js/typeit.js": "e9b5e456fb641b427f75b66c5b45d787d907e8338c50c8fa73d5f2081b469b36",
 "js/update.js": "106d560ca729ef326df25ed80cb5cbf044dd89c4fc7fae959a6b7ab4b564e60e",
 "js/widgets.js": "6c1d2ea72d3a5d2d09979861a6185a0fba7c0af72a69776bcc3a598712978815",
